@@ -28,20 +28,6 @@
 #define MISO					(1 << PB3)
 
 // SPI Peripherals
-#define	SDCard					1
-#define B0_Driver				2
-#define	B0_Rcv					3
-#define B1_Driver				4
-#define B1_Rcv					5
-#define B2_Driver				6
-#define B2_Rcv					7
-#define B3_Driver				8
-#define B3_Rcv					9
-#define B4_Driver				10
-#define B4_Rcv					11
-#define EEPROM					12
-#define	DESELECT				0x00
-
 
 #endif /* CONSTANTS_H_ */
 
