@@ -8,39 +8,27 @@
 #ifndef SPICONTROLLER_H_
 #define SPICONTROLLER_H_
 
-#define	SDCard					1
-#define B0_Driver				2
-#define	B0_Rcv					3
-#define B1_Driver				4
-#define B1_Rcv					5
-#define B2_Driver				6
-#define B2_Rcv					7
-#define B3_Driver				8
-#define B3_Rcv					9
-#define B4_Driver				10
-#define B4_Rcv					11
-#define EEPROM					12
-#define	DESELECT				0x00
-
 typedef enum
-{	SDCard,
-	B0_Driver,
-	B0_Receiver,
-	B1_Driver,
-	B1_Receiver,
-	B2_Driver,
-	B2_Receiver,
-	B3_Driver,
-	B3_Receiver,
-	B4_Driver,
-	B4_Receiver,
-	EEPROM,
-	DESELECT} SPIDevice_t;
+{
+	SDCard = (1 << PB0),
+	B0_Driver = (1 << PF1),
+	B0_Rcv = (1 << PB7),
+	B1_Driver =(1 << PE6),
+	B1_Rcv = (1 << PE7),
+	B2_Driver = (1 << PE4),
+	B2_Rcv = (1 << PE5),
+	B3_Driver = (1 << PE2),
+	B3_Rcv = (1 << PE3),
+	B4_Driver = (1 << PE0),
+	B4_Rcv = (1 << PE1),
+	EEPROM = (1 << PG5),
+	DESELECT = 0x00
+} SPIDevice_t;
 
 void initSPI(void);
 void setupSPIPorts(void);
 void writeByte(uint8_t byte);
 uint8_t readByte(void);
-void selectChip(SPIDevice_t device);
+void selectChip(uint8_t chip);
 
 #endif /* SPICONTROLLER_H_ */
