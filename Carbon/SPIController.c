@@ -74,4 +74,29 @@ void selectDevice(SPIDevice_t device)
 	{
 		PORTE &= ~B1_Rcv_p;
 	}
+	else if(device == B2_Driver)
+	{
+		PORTE &= ~B2_Driver_p;
+	}
+	else if(device == B2_Rcv)
+	{
+		PORTE &= ~B2_Rcv_p;
+	}
+	else if(device == B3_Driver)
+	{
+		PORTE &= ~B3_Driver_p;
+	}
+	else if(device == B3_Rcv)
+	{
+		PORTE &= ~B3_Rcv_p;
+	}
+	else if(device == B4_Driver)
+	{
+		PORTE &= ~B4_Driver_p;
+	}
+	else if(device == B4_Rcv)
+	{
+		PORTE &= ~B4_Rcv_p;
+	}
+
 }

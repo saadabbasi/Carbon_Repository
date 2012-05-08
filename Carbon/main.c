@@ -15,6 +15,8 @@
 #include "constants.h"
 #include "harnessio.h"
 #include "SPIController.h"
+#include "CPLD_API.h"
+#include "CheckerAPI.h"
 
 #define bit_get(p,m) ((p) & (m))
 #define bit_set(p,m) ((p) |= (m))
@@ -168,22 +170,23 @@ int main(void) {
 		return 2;
 	}
 
-	unsigned int bytes_written;
+	uint8_t test_vector[18];
 	int i,j; uint8_t position;
-	setFirstBit();
-	uint8_t test_vector[9];
+	unsigned int bytes_written;
+
+	setFirstBitOnBoard(ControllerBoard);
 	for(i=0;i<72;i++)
 	{
 		GLCD_SetCursorAddress(120);
-		recieveTestVector(test_vector);
-		for(j=0;j<9;j++)
+		recieveTestVectorFromConnectedBoards(test_vector);
+		for(j=0;j<18;j++)
 		{
 			itoa(test_vector[j],str,2);
 			GLCD_WriteText(str);
 			GLCD_WriteText("-");
 		}
-		position = getSetBitPosition();
-		f_write(&f_map,test_vector,TESTPOINTS/8,&bytes_written);
+
+		f_write(&f_map,test_vector,18,&bytes_written);
 		if(bytes_written == 0)
 		{
 			GLCD_ClearGraphic();
@@ -192,9 +195,33 @@ int main(void) {
 			GLCD_WriteText("ERROR writing to MMC/SD Card. Contact supervisor.");
 			return 1;
 		}
-		GLCD_SetCursorAddress(0x00);
-		//_delay_ms(500);
-		shiftLeft();
+		//_delay_ms(100);
+		shiftVectorOnBoard(ControllerBoard);
+	}
+
+	setFirstBitOnBoard(DaughterBoard_One);
+	for(i=0;i<72;i++)
+	{
+		GLCD_SetCursorAddress(120);
+		recieveTestVectorFromConnectedBoards(test_vector);
+		for(j=0;j<18;j++)
+		{
+			itoa(test_vector[j],str,2);
+			GLCD_WriteText(str);
+			GLCD_WriteText("-");
+		}
+
+		f_write(&f_map,test_vector,18,&bytes_written);
+		if(bytes_written == 0)
+		{
+			GLCD_ClearGraphic();
+			GLCD_ClearText();
+			GLCD_SetCursorAddress(0x00);
+			GLCD_WriteText("ERROR writing to MMC/SD Card. Contact supervisor.");
+			return 1;
+		}
+		//_delay_ms(100);
+		shiftVectorOnBoard(DaughterBoard_One);
 	}
 
 	GLCD_SetCursorAddress(160);

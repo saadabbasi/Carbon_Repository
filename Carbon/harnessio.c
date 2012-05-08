@@ -160,10 +160,10 @@ void fetchWireInfo(FIL *f_ptr, int wire_num, char wire_info[], int parameter, in
 uint8_t getSetBitPosition(void)
 {
 	uint8_t set_bit_position;
-	selectDevice(B0_Driver);
+	selectDevice(B1_Driver);
 	writeByte(CMD_GETSETBITPOSITION);
 	selectDevice(DESELECT);
-	selectDevice(B0_Driver);
+	selectDevice(B1_Driver);
 	set_bit_position = readByte();
 	selectDevice(DESELECT);
 	return set_bit_position;
@@ -171,7 +171,7 @@ uint8_t getSetBitPosition(void)
 
 void recieveTestVector(uint8_t testVector[])
 {
-	selectDevice(B0_Rcv);
+	selectDevice(B1_Rcv);
 	for(int i=0;i<TESTPOINTS/8;i++)
 	{
 		testVector[i] = readByte();
@@ -191,7 +191,7 @@ void read_ckt_data(FIL *f_ptr, int ckt_num, unsigned char ckt_data[])
 
 void setFirstBit(void)
 {
-	selectDevice(B0_Driver);
+	selectDevice(B1_Driver);
 	_delay_ms(1000);
 	writeByte(CMD_SETFIRSTBIT);
 	selectDevice(DESELECT);
@@ -199,7 +199,7 @@ void setFirstBit(void)
 
 void shiftLeft(void)
 {
-	selectDevice(B0_Driver);
+	selectDevice(B1_Driver);
 	writeByte(CMD_SHIFTLEFT);
 	selectDevice(DESELECT);
 }
