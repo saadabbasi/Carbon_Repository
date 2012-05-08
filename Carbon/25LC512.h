@@ -2,10 +2,6 @@
 #include "SPIController.h"
 
 #define EEPROM_PAGESIZE			128
-#define	DESELECT				0x00
-
-extern void sendByte(uint8_t);
-extern uint8_t readByte(void);
 
 void writeEnable(void);
 void eepromSendAddress(uint16_t address);

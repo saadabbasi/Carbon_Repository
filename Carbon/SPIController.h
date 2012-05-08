@@ -16,6 +16,20 @@
 #define MOSI (1 << PB2)
 #define MISO (1 << PB3)
 
+#define	SDCard_p				(1 << PB0)
+#define B0_Driver_p				(1 << PF1)
+#define	B0_Rcv_p				(1 << PB7)
+#define B1_Driver_p				(1 << PE6)
+#define B1_Rcv_p				(1 << PE7)
+#define B2_Driver_p				(1 << PE4)
+#define B2_Rcv_p				(1 << PE5)
+#define B3_Driver_p				(1 << PE2)
+#define B3_Rcv_p				(1 << PE3)
+#define B4_Driver_p				(1 << PE0)
+#define B4_Rcv_p				(1 << PE1)
+#define EEPROM_p				(1 << PG5)
+#define	DESELECT_p				0x00
+
 typedef enum
 {
 	SDCard,

@@ -8,6 +8,7 @@
 #include "constants.h"
 #include "ff.h"
 #include "25LC512.h"
+#include "SPIController.h"
 #include <util/delay.h>
 
 typedef struct
@@ -27,12 +28,9 @@ typedef struct
 #define CMD_GETSETBITPOSITION 0xF0
 
 void recieveTestVector(uint8_t testVector[]);
-void chipSelect(uint8_t chipID);
 void shiftLeft(void);
 void setFirstBit(void);
 uint8_t getSetBitPosition(void);
-extern uint8_t readByte(void);
-extern void sendByte(uint8_t);
 
 void read_ckt_data(FIL *f_ptr, int ckt_num, unsigned char ckt_data[]);
 void fetchWireInfo(FIL *f_ptr, int wire_num, char wire_info[], int parameter, int width);

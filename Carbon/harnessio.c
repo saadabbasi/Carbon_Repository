@@ -69,7 +69,7 @@ uint8_t copyHarnessCircuitData(void)
 			GLCD_WriteText("Cannot Read File");
 			return 2;
 		}
-		writeBuffer(buffer,address);
+		eepromWritePage(buffer,address);
 		address = address + page;
 	}while(bytesRead == 128);
 
@@ -192,6 +192,7 @@ void read_ckt_data(FIL *f_ptr, int ckt_num, unsigned char ckt_data[])
 void setFirstBit(void)
 {
 	selectDevice(B0_Driver);
+	_delay_ms(1000);
 	writeByte(CMD_SETFIRSTBIT);
 	selectDevice(DESELECT);
 }

@@ -166,7 +166,8 @@ void power_on (void)
 	DDRB  = 0b11000111;
 
 	SPCR = 0x52;			/* Enable SPI function in mode 0 */
-	SPSR = 0x01;			/* SPI 2x mode */
+	SPSR = 0x00;			/* SPI 2x mode */
+	// The SPSR bit was set o 0x01 in the original file. I adjusted it to 0x00 to reduce speed to 2MHz.
 }
 
 

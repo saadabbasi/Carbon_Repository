@@ -4,9 +4,9 @@ void writeEnable(void)
 {
 	uint8_t WREN = 0x06;
 
-	chipSelect(EEPROM);
-	sendByte(WREN);
-	chipSelect(DESELECT);
+	selectDevice(EEPROM);
+	writeByte(WREN);
+	selectDevice(DESELECT);
 }
 
 void eepromSendAddress(uint16_t address)
@@ -28,7 +28,7 @@ void eepromWrite(uint8_t byte, uint16_t address)
 		eepromSendAddress(address);
 
 		for (int i = 0; i < 128; i++) {
-			sendByte(42);
+			writeByte(42);
 		}
 		selectDevice(DESELECT);
 		_delay_ms(10);

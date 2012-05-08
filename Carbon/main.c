@@ -95,15 +95,17 @@ DWORD get_fattime(void) {
 
 	/* Pack date and time into a DWORD variable */
 	return ((DWORD)(rtc.year - 1980) << 25)
-	| ((DWORD)rtc.month << 21)
-	| ((DWORD)rtc.mday << 16)
-	| ((DWORD)rtc.hour << 11)
-	| ((DWORD)rtc.min << 5)
-	| ((DWORD)rtc.sec >> 1);
+			| ((DWORD)rtc.month << 21)
+			| ((DWORD)rtc.mday << 16)
+			| ((DWORD)rtc.hour << 11)
+			| ((DWORD)rtc.min << 5)
+			| ((DWORD)rtc.sec >> 1);
 #else
 	return 0;
 #endif
 }
+
+uint8_t learnHarness(void);
 
 int main(void) {
 	FATFS FileSystemObject;
@@ -117,17 +119,9 @@ int main(void) {
 		return 0;
 	}
 
-	initSPI();
-
-	FIL f_harness;
-	if (f_open(&f_harness, "/data.bin", FA_READ | FA_WRITE | FA_OPEN_ALWAYS)
-			!= FR_OK) {
-		GLCD_SetCursorAddress(0);
-		GLCD_WriteText("Cannot Open File.");
-		return 0;
-	}
 	unsigned int bytesRead;
 	uint16_t address = 32768;
+	initSPI();
 
 	/*do
 	 {
@@ -144,8 +138,12 @@ int main(void) {
 	 f_close(&f_harness);
 	 f_mount(0,0);*/
 
-	DDRF = (1 << PF0);
+
+	DDRF |= (1 << PF0);
 	bit_set(PORTF, BIT(0));
+
+	DDRG |= (1 << PG4);
+	PORTG |= (1 << PG4);
 
 	_delay_us(1);
 
@@ -154,68 +152,94 @@ int main(void) {
 	WireInfo info;
 	WireInfo wires[7];
 
-	//	for(int i=0;i<72;i++)
-	//	{
-	//		readWireParameters(i,&info);
-	//		GLCD_SetCursorAddress(0);
-	//		GLCD_WriteText(info.locationA);
-	//		GLCD_SetCursorAddress(10);
-	//		GLCD_WriteText(info.locationB);
-	//		GLCD_SetCursorAddress(20);
-	//		GLCD_WriteText(info.colour);
-	//		GLCD_SetCursorAddress(30);
-	//		GLCD_WriteText(info.gauge);
-	//		_delay_ms(1000);
-	//	}
-
-	//		if(copyHarnessCircuitData() == 0)
-	//		{
-	//			GLCD_SetCursorAddress(0);
-	//			GLCD_WriteText("Copy Success");
-	//		}
-
-	char my_buf[128];
-	eepromRead(my_buf, 646, 4);
-
-	itoa(my_buf[0], my_str, 10);
-	GLCD_SetCursorAddress(40);
-	GLCD_WriteText(my_str);
-
-	itoa(my_buf[1], my_str, 10);
+	char buffer[2];
+	char str[10];
+	eepromRead(buffer,address,2);
+	itoa(buffer[0],str,10);
 	GLCD_SetCursorAddress(80);
-	GLCD_WriteText(my_str);
+	GLCD_WriteText(str);
 
-	itoa(my_buf[2], my_str, 10);
-	GLCD_SetCursorAddress(120);
-	GLCD_WriteText(my_str);
+	FIL f_map;
 
-	itoa(my_buf[3], my_str, 10);
-	GLCD_SetCursorAddress(160);
-	GLCD_WriteText(my_str);
-
-	if (verifyHarnessCircuitData() == 0) {
+	if(f_open(&f_map,"/MAP.CHK",FA_READ | FA_WRITE | FA_OPEN_ALWAYS) != FR_OK)
+	{
 		GLCD_SetCursorAddress(0);
-		GLCD_WriteText("Verification Successful.");
+		GLCD_WriteText("Error Opening");
+		return 2;
 	}
 
-	// uint16_t wire_pos[6] = {0,1,10,50,2,20};
-	//
-	// 	readWireParametersFromIndices(wire_pos,wires);
-	//
+	unsigned int bytes_written;
+	int i,j; uint8_t position;
+	setFirstBit();
+	uint8_t test_vector[9];
+	for(i=0;i<72;i++)
+	{
+		GLCD_SetCursorAddress(120);
+		recieveTestVector(test_vector);
+		for(j=0;j<9;j++)
+		{
+			itoa(test_vector[j],str,2);
+			GLCD_WriteText(str);
+			GLCD_WriteText("-");
+		}
+		position = getSetBitPosition();
+		f_write(&f_map,test_vector,TESTPOINTS/8,&bytes_written);
+		if(bytes_written == 0)
+		{
+			GLCD_ClearGraphic();
+			GLCD_ClearText();
+			GLCD_SetCursorAddress(0x00);
+			GLCD_WriteText("ERROR writing to MMC/SD Card. Contact supervisor.");
+			return 1;
+		}
+		GLCD_SetCursorAddress(0x00);
+		//_delay_ms(500);
+		shiftLeft();
+	}
 
-	// 	for(int i=0;i<3;i++)
-	// 	{
+	GLCD_SetCursorAddress(160);
+	GLCD_WriteText("DONE");
+	f_close(&f_map);
 
-	// 		GLCD_SetCursorAddress(0);
-	// 				GLCD_WriteText(wires[i].locationA);
-	// 				GLCD_SetCursorAddress(10);
-	// 				GLCD_WriteText(wires[i].locationB);
-	// 				GLCD_SetCursorAddress(20);
-	// 				GLCD_WriteText(wires[i].colour);
-	// 				GLCD_SetCursorAddress(30);
-	// 				GLCD_WriteText(wires[i].gauge);
-	// 		_delay_ms(1000);
-	// 	}
+	return 0;
+}
+
+uint8_t learnHarness(void)
+{
+	_delay_ms(1000);
+	unsigned int bytes_written;
+	uint16_t total_bytes_written = 0;
+	uint8_t recieved_vector[TESTPOINTS/8];
+
+	FIL f_map;
+
+	if(f_open(&f_map,"/MAP.CHK",FA_READ | FA_WRITE | FA_OPEN_ALWAYS) != FR_OK)
+	{
+		GLCD_SetCursorAddress(0);
+		GLCD_WriteText("Error Opening");
+		return 2;
+	}
+
+	setFirstBit();
+
+	for(int i=0;i<TESTPOINTS;i++)
+	{
+		recieveTestVector(recieved_vector);
+		f_write(&f_map,recieved_vector,TESTPOINTS/8,&bytes_written);
+		if(bytes_written == 0)
+		{
+			GLCD_ClearGraphic();
+			GLCD_ClearText();
+			GLCD_SetCursorAddress(0x00);
+			GLCD_WriteText("ERROR writing to MMC/SD Card. Contact supervisor.");
+			return 1;
+		}
+		total_bytes_written = total_bytes_written + bytes_written;
+		GLCD_SetCursorAddress(0x00);
+
+		shiftLeft();
+	}
+	f_close(&f_map);
 
 	return 0;
 }

@@ -17,14 +17,17 @@ void initSPI(void)
 void setupSPIPorts(void)
 {
 	PORTB = 0b11111101;
-	DDRB = (MOSI) | (SCK) | (B0_Rcv) | (SDCard);
+	DDRB = (MOSI) | (SCK) | (B0_Rcv_p) | (SDCard_p);
 
 
-	DDRE = 0xFF;
-	PORTE = 0xFF;
+	DDRE |= 0xFF;
+	PORTE |= 0xFF;
 
-	DDRG = (1 << PG5);
-	PORTG = (1 << PG5);
+	DDRG |= (1 << PG5);
+	PORTG |= (1 << PG5);
+
+	DDRF |= (1 << PF1);
+	PORTF |= (1 << PF1);
 
 	selectDevice(DESELECT);
 }
@@ -35,6 +38,7 @@ void writeByte(uint8_t byte)
 	while(!(SPSR & (1 << SPIF)));
 	byteFromSlave = SPDR;
 }
+
 uint8_t readByte(void)
 {
 	uint8_t byteFromSlave;
@@ -46,12 +50,28 @@ uint8_t readByte(void)
 void selectDevice(SPIDevice_t device)
 {
 	PORTE = 0xFF;
-	PORTB |= SDCard | B0_Rcv;
-	PORTF |= B0_Driver;
-	PORTG |= EEPROM;
+	PORTB = SDCard_p | B0_Rcv_p;
+	PORTF |= B0_Driver_p;
+	PORTG |= EEPROM_p;
 
 	if(device == EEPROM)
 	{
-		PORTG &= ~EEPROM;
+		PORTG &= ~EEPROM_p;
+	}
+	else if(device == B0_Driver)
+	{
+		PORTF &= ~B0_Driver_p;
+	}
+	else if(device == B0_Rcv)
+	{
+		PORTB &= ~B0_Rcv_p;
+	}
+	else if(device == B1_Driver)
+	{
+		PORTE &= ~B1_Driver_p;
+	}
+	else if(device == B1_Rcv)
+	{
+		PORTE &= ~B1_Rcv_p;
 	}
 }
