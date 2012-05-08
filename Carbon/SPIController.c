@@ -26,11 +26,14 @@ void setupSPIPorts(void)
 	DDRG = (1 << PG5);
 	PORTG = (1 << PG5);
 
-	chipSelect(DESELECT);
+	selectDevice(DESELECT);
 }
 void writeByte(uint8_t byte)
 {
-
+	uint8_t byteFromSlave;
+	SPDR = byte;
+	while(!(SPSR & (1 << SPIF)));
+	byteFromSlave = SPDR;
 }
 uint8_t readByte(void)
 {
@@ -40,7 +43,15 @@ uint8_t readByte(void)
 	byteFromSlave = SPDR;
 	return byteFromSlave;
 }
-void selectChip(SPIDevice_t device)
+void selectDevice(SPIDevice_t device)
 {
+	PORTE = 0xFF;
+	PORTB |= SDCard | B0_Rcv;
+	PORTF |= B0_Driver;
+	PORTG |= EEPROM;
 
+	if(device == EEPROM)
+	{
+		PORTG &= ~EEPROM;
+	}
 }

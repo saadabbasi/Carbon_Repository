@@ -160,23 +160,23 @@ void fetchWireInfo(FIL *f_ptr, int wire_num, char wire_info[], int parameter, in
 uint8_t getSetBitPosition(void)
 {
 	uint8_t set_bit_position;
-	chipSelect(B0_Driver);
-	sendByte(CMD_GETSETBITPOSITION);
-	chipSelect(DESELECT);
-	chipSelect(B0_Driver);
+	selectDevice(B0_Driver);
+	writeByte(CMD_GETSETBITPOSITION);
+	selectDevice(DESELECT);
+	selectDevice(B0_Driver);
 	set_bit_position = readByte();
-	chipSelect(DESELECT);
+	selectDevice(DESELECT);
 	return set_bit_position;
 }
 
 void recieveTestVector(uint8_t testVector[])
 {
-	chipSelect(B0_Rcv);
+	selectDevice(B0_Rcv);
 	for(int i=0;i<TESTPOINTS/8;i++)
 	{
 		testVector[i] = readByte();
 	}
-	chipSelect(DESELECT);
+	selectDevice(DESELECT);
 }
 
 void read_ckt_data(FIL *f_ptr, int ckt_num, unsigned char ckt_data[])
@@ -191,15 +191,15 @@ void read_ckt_data(FIL *f_ptr, int ckt_num, unsigned char ckt_data[])
 
 void setFirstBit(void)
 {
-	chipSelect(B0_Driver);
-	sendByte(CMD_SETFIRSTBIT);
-	chipSelect(DESELECT);
+	selectDevice(B0_Driver);
+	writeByte(CMD_SETFIRSTBIT);
+	selectDevice(DESELECT);
 }
 
 void shiftLeft(void)
 {
-	chipSelect(B0_Driver);
-	sendByte(CMD_SHIFTLEFT);
-	chipSelect(DESELECT);
+	selectDevice(B0_Driver);
+	writeByte(CMD_SHIFTLEFT);
+	selectDevice(DESELECT);
 }
 

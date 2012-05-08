@@ -1,19 +1,57 @@
 #include "25LC512.h"
 
-void eepromSendAddress(uint16_t address)
+void writeEnable(void)
 {
-	sendByte(address >> 8);
-	sendByte(address);
+	uint8_t WREN = 0x06;
+
+	chipSelect(EEPROM);
+	sendByte(WREN);
+	chipSelect(DESELECT);
 }
 
-//void eepromWrite(uint8_t byte, uint16_t address)
-//{
+void eepromSendAddress(uint16_t address)
+{
+	writeByte(address >> 8);
+	writeByte(address);
+}
 
-//}
-//void eepromWrite(uint8_t page[], uint16_t address)
-//{
+void eepromWrite(uint8_t byte, uint16_t address)
+{
+	const uint8_t WRITE = 0x02;
 
-//}/
+		writeEnable();
+
+		_delay_us(1);
+
+		selectDevice(EEPROM);
+		writeByte(WRITE);
+		eepromSendAddress(address);
+
+		for (int i = 0; i < 128; i++) {
+			sendByte(42);
+		}
+		selectDevice(DESELECT);
+		_delay_ms(10);
+}
+
+void eepromWritePage(uint8_t page[], uint16_t address)
+{
+	const uint8_t WRITE = 0x02;
+
+		writeEnable();
+
+		selectDevice(EEPROM);
+		writeByte(WRITE);
+
+		eepromSendAddress(address);
+
+		for (int i = 0; i < 128; i++) {
+			writeByte(page[i]);
+		}
+		selectDevice(DESELECT);
+		_delay_ms(10);
+}
+
 void eepromRead(char buffer[], uint16_t address, uint8_t bytes_to_read)
 {
 	const uint8_t READ = 0x03;
@@ -24,8 +62,8 @@ void eepromRead(char buffer[], uint16_t address, uint8_t bytes_to_read)
 		str[i] = 0x00;
 	}
 
-	chipSelect(EEPROM);
-	sendByte(READ);
+	selectDevice(EEPROM);
+	writeByte(READ);
 	eepromSendAddress(address);
 
 	for(int i=0;i<bytes_to_read;i++)
@@ -34,7 +72,7 @@ void eepromRead(char buffer[], uint16_t address, uint8_t bytes_to_read)
 	}
 	
 	GLCD_WriteText(str);
-	chipSelect(DESELECT);
+	selectDevice(DESELECT);
 }
 void eepromChipErase(void)
 {

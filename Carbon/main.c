@@ -1,6 +1,3 @@
-/*----------------------------------------------------------------------------/
- /  Checker Firmware v0.13                  (C)Bahawalpur Engineering Ltd, 2012
- /----------------------------------------------------------------------------*/
 #include <avr/io.h>
 #include <avr/pgmspace.h>
 #include <util/delay.h>
@@ -108,77 +105,6 @@ DWORD get_fattime(void) {
 #endif
 }
 
-void writeEnable(void) {
-	uint8_t WREN = 0x06;
-
-	chipSelect(EEPROM);
-	sendByte(WREN);
-	chipSelect(DESELECT);
-}
-
-void writeBuffer(uint8_t buffer[], uint16_t address) {
-	const uint8_t WRITE = 0x02;
-
-	writeEnable();
-
-	chipSelect(EEPROM);
-	sendByte(WRITE);
-
-	sendByte(address >> 8);
-	sendByte(address);
-
-	for (int i = 0; i < 128; i++) {
-		sendByte(buffer[i]);
-	}
-	chipSelect(DESELECT);
-	_delay_ms(10);
-}
-
-void eeprom_write() {
-
-	const uint8_t WRITE = 0x02;
-
-	writeEnable();
-
-	_delay_us(1);
-
-	chipSelect(EEPROM);
-	sendByte(WRITE);
-
-	uint16_t address = 0;
-
-	sendByte(address >> 8);
-	sendByte(address);
-
-	for (int i = 0; i < 128; i++) {
-		sendByte(42);
-	}
-	chipSelect(DESELECT);
-	_delay_ms(10);
-}
-
-void eeprom_read() {
-	const uint8_t READ = 0x03;
-
-	char str[10];
-	for (int i = 0; i < 10; i++) {
-		str[i] = 0x00;
-	}
-
-	uint16_t address = 33360;
-
-	chipSelect(EEPROM);
-	sendByte(READ);
-	eepromSendAddress(address);
-
-	for (int i = 0; i < 5; i++) {
-		str[i] = readByte();
-	}
-
-	GLCD_WriteText(str);
-	chipSelect(DESELECT);
-}
-
 int main(void) {
 	FATFS FileSystemObject;
 	GLCD_Initialize();
@@ -191,7 +117,7 @@ int main(void) {
 		return 0;
 	}
 
-	setupSPI();
+	initSPI();
 
 	FIL f_harness;
 	if (f_open(&f_harness, "/data.bin", FA_READ | FA_WRITE | FA_OPEN_ALWAYS)

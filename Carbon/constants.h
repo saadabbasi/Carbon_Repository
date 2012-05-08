@@ -23,10 +23,6 @@
 #define	LOCATION_WIDTH			10
 #define ROW_WIDTH				36
 
-#define SCK						(1 << PB1)
-#define	MOSI					(1 << PB2)
-#define MISO					(1 << PB3)
-
 // SPI Peripherals
 
 #endif /* CONSTANTS_H_ */
