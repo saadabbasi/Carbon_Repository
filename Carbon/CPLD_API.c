@@ -7,38 +7,82 @@
 
 #include "CPLD_API.h"
 
-void recieveTestVectorFromBoard(IO_Board board, uint8_t testVector[]) // returns a 72 point test vector from specified daughterboard
+CPLDRESULT deviceIsADriver(SPIDevice_t device)
+{
+	if(device!=B0_Driver && device!=B1_Driver && device!=B2_Driver && device!=B3_Driver && device!=B4_Driver)
+	{
+		return (CPLD_BOARD_ID_ERR);
+	}
+	return CPLD_OK;
+}
+
+CPLDRESULT deviceIsAReciever(SPIDevice_t device)
+{
+	if(device!=B0_Rcv && device!=B1_Rcv && device!=B2_Rcv && device!=B3_Rcv && device!=B4_Rcv)
+	{
+		return (CPLD_BOARD_ID_ERR);
+	}
+	return CPLD_OK;
+}
+
+CPLDRESULT initDriverCPLD(SPIDevice_t device)
+{
+	if(deviceIsADriver(device) == CPLD_BOARD_ID_ERR)
+	{
+		return CPLD_BOARD_ID_ERR;
+	}
+
+	selectDevice(device);
+	writeByte(0x11);
+	selectDevice(DESELECT);
+	selectDevice(device);
+	uint8_t initByte = readByte();
+	selectDevice(DESELECT);
+	if(initByte!=72)
+	{
+		return (CPLD_INIT_ERR);
+	}
+
+	return (CPLD_OK);
+}
+
+CPLDRESULT recieveTestVectorFromReceiver(SPIDevice_t device, uint8_t testVector[]) // returns a 72 point test vector from specified daughterboard
 {
 	int starting_position = 0;
 	int ending_position = 9;
-	if(board == ControllerBoard)
+	if(device == B0_Rcv)
 	{
 		selectDevice(B0_Rcv);
-		starting_position = 9;
-		ending_position = 18;
-	}
-	else if(board == DaughterBoard_One)
-	{
-
-		selectDevice(B1_Rcv);
 		starting_position = 0;
 		ending_position = 9;
 	}
-	else if(board == DaughterBoard_Two)
+	else if(device == B1_Rcv)
+	{
+		selectDevice(B1_Rcv);
+		starting_position = 9;
+		ending_position = 18;
+	}
+	else if(device == B2_Rcv)
 	{
 		selectDevice(B2_Rcv);
+		starting_position = 18;
+		ending_position = 27;
 	}
-	else if(board == DaughterBoard_Three)
+	else if(device == B3_Rcv)
 	{
 		selectDevice(B3_Rcv);
+		starting_position = 27;
+		ending_position = 36;
 	}
-	else if(board == DaughterBoard_Four)
+	else if(device == B4_Rcv)
 	{
 		selectDevice(B4_Rcv);
+		starting_position = 36;
+		ending_position = 45;
 	}
 	else
 	{
-		return;
+		return CPLD_BOARD_ID_ERR;
 	}
 
 	for(int i=starting_position;i<ending_position;i++)
@@ -46,64 +90,29 @@ void recieveTestVectorFromBoard(IO_Board board, uint8_t testVector[]) // returns
 		testVector[i] = readByte();
 	}
 	selectDevice(DESELECT);
+	return CPLD_OK;
 }
 
-void setFirstBitOnBoard(IO_Board board)
+CPLDRESULT setFirstBitOnDriver(SPIDevice_t device)
 {
-	if(board == ControllerBoard)
+	if(deviceIsADriver(device) == CPLD_BOARD_ID_ERR)
 	{
-		selectDevice(B0_Driver);
+		return CPLD_BOARD_ID_ERR;
 	}
-	else if(board == DaughterBoard_One)
-	{
-		selectDevice(B1_Driver);
-	}
-	else if(board == DaughterBoard_Two)
-	{
-		selectDevice(B2_Driver);
-	}
-	else if(board == DaughterBoard_Three)
-	{
-		selectDevice(B3_Driver);
-	}
-	else if(board == DaughterBoard_Four)
-	{
-		selectDevice(B4_Driver);
-	}
-	else
-	{
-		return;
-	}
+	selectDevice(device);
 	writeByte(0x01);
 	selectDevice(DESELECT);
+	return CPLD_OK;
 }
 
-void shiftVectorOnBoard(IO_Board board)
+CPLDRESULT shiftVectorOnDriver(SPIDevice_t device)
 {
-	if(board == ControllerBoard)
+	if(deviceIsADriver(device) == CPLD_BOARD_ID_ERR)
 	{
-		selectDevice(B0_Driver);
+		return CPLD_BOARD_ID_ERR;
 	}
-	else if(board == DaughterBoard_One)
-	{
-		selectDevice(B1_Driver);
-	}
-	else if(board == DaughterBoard_Two)
-	{
-		selectDevice(B2_Driver);
-	}
-	else if(board == DaughterBoard_Three)
-	{
-		selectDevice(B3_Driver);
-	}
-	else if(board == DaughterBoard_Four)
-	{
-		selectDevice(B4_Driver);
-	}
-	else
-	{
-		return;
-	}
+	selectDevice(device);
 	writeByte(0xAA);
 	selectDevice(DESELECT);
+	return CPLD_OK;
 }

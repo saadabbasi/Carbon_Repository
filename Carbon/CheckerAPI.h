@@ -11,8 +11,23 @@
 #include <avr/io.h>
 #include <stdint.h>
 #include "CPLD_API.h"
+#include "uart.h"
+#include "xitoa.h"
+#include "ff.h"
+#include "diskio.h"
 
-int8_t returnNumberOfConnectedBoards(void);
+#define TPOINTS 		360
+#define TPOINTS_BYTES	45
+
+typedef enum
+{
+	CH_OK = 0,
+	CH_NO_SD_CARD_PRESENT,
+	INVALID_BOARD_SEQUENCE,
+} CH_RESULT;
+
+CH_RESULT programHarness(void);
+uint8_t initalizeDriverCPLDs(void);
 void recieveTestVectorFromConnectedBoards(uint8_t test_vector[]);
 
 #endif /* CHECKERAPI_H_ */

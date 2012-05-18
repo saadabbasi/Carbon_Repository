@@ -9,8 +9,16 @@
 #define CPLD_API_H_
 
 #include "SPIController.h"
+#include <stdint.h>
 
 #define TESTPOINTS_PER_BOARD	72
+
+typedef enum
+{
+	CPLD_OK = 0,
+	CPLD_INIT_ERR,
+	CPLD_BOARD_ID_ERR,
+} CPLDRESULT;
 
 typedef enum
 {
@@ -21,9 +29,12 @@ typedef enum
 	DaughterBoard_Four
 } IO_Board;
 
-void recieveTestVectorFromBoard(IO_Board board, uint8_t testVector[]); // returns a 72 point test vector from specified daughterboard
-void setFirstBitOnBoard(IO_Board board);
-void shiftVectorOnBoard(IO_Board board);
+CPLDRESULT deviceIsADriver(SPIDevice_t device);
+CPLDRESULT deviceIsAReciever(SPIDevice_t device);
+CPLDRESULT initDriverCPLD(SPIDevice_t device);
+CPLDRESULT recieveTestVectorFromReceiver(SPIDevice_t device, uint8_t testVector[]); // returns a 72 point test vector from specified receiver CPLD.
+CPLDRESULT setFirstBitOnDriver(SPIDevice_t device);
+CPLDRESULT shiftVectorOnDriver(SPIDevice_t device);
 uint8_t getSetBitPositionFromBoard(IO_Board board);
 
 #endif /* CPLD_API_H_ */

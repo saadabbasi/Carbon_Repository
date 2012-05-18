@@ -74,7 +74,6 @@ uint8_t copyHarnessCircuitData(void)
 	}while(bytesRead == 128);
 
 	f_close(&f_circuit_data);
-	f_mount(0,0);
 	return 0;
 }
 
@@ -166,7 +165,7 @@ uint8_t getSetBitPosition(void)
 	selectDevice(B1_Driver);
 	set_bit_position = readByte();
 	selectDevice(DESELECT);
-	return set_bit_position;
+	return (set_bit_position);
 }
 
 void recieveTestVector(uint8_t testVector[])

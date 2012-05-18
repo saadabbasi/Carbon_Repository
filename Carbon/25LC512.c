@@ -28,7 +28,7 @@ void eepromWrite(uint8_t byte, uint16_t address)
 		eepromSendAddress(address);
 
 		for (int i = 0; i < 128; i++) {
-			writeByte(42);
+			writeByte(byte);
 		}
 		selectDevice(DESELECT);
 		_delay_ms(10);

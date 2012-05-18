@@ -33,16 +33,16 @@
 typedef enum
 {
 	SDCard,
-	B0_Driver,
-	B0_Rcv,
-	B1_Driver,
-	B1_Rcv,
-	B2_Driver,
-	B2_Rcv,
-	B3_Driver,
-	B3_Rcv,
-	B4_Driver,
-	B4_Rcv,
+	B0_Driver = 0,
+	B0_Rcv = 5,
+	B1_Driver = 1,
+	B1_Rcv = 6,
+	B2_Driver = 2,
+	B2_Rcv = 7,
+	B3_Driver = 3,
+	B3_Rcv = 8,
+	B4_Driver = 4,
+	B4_Rcv = 9,
 	EEPROM,
 	DESELECT
 } SPIDevice_t;

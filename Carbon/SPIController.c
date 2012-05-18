@@ -19,15 +19,15 @@ void setupSPIPorts(void)
 	PORTB = 0b11111101;
 	DDRB = (MOSI) | (SCK) | (B0_Rcv_p) | (SDCard_p);
 
-
-	DDRE |= 0xFF;
-	PORTE |= 0xFF;
+	PORTE = 0xFF;
+	DDRE = 0xFF;
 
 	DDRG |= (1 << PG5);
 	PORTG |= (1 << PG5);
 
-	DDRF |= (1 << PF1);
 	PORTF |= (1 << PF1);
+	DDRF |= (1 << PF1);
+
 
 	selectDevice(DESELECT);
 }
@@ -49,8 +49,8 @@ uint8_t readByte(void)
 }
 void selectDevice(SPIDevice_t device)
 {
-	PORTE = 0xFF;
 	PORTB = SDCard_p | B0_Rcv_p;
+	PORTE = 0xFF;
 	PORTF |= B0_Driver_p;
 	PORTG |= EEPROM_p;
 

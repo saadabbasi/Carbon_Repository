@@ -110,20 +110,63 @@ DWORD get_fattime(void) {
 uint8_t learnHarness(void);
 
 int main(void) {
+	char str[10];
 	FATFS FileSystemObject;
 	GLCD_Initialize();
 
 	setupSPIPorts();
-
-	uint8_t eeprom_buffer[128];
+	DDRG |= (1 << PG4); PORTG |= (1 << PG4);
+	//	PORTG &= ~(1 << PG4);
 
 	if (f_mount(0, &FileSystemObject) != FR_OK) {
-		return 0;
+		return (0);
 	}
 
-	unsigned int bytesRead;
-	uint16_t address = 32768;
 	initSPI();
+	uint8_t test = initalizeDriverCPLDs();
+	itoa(test,str,10);
+
+	GLCD_SetCursorAddress(0);
+	GLCD_WriteText(str);
+
+
+//	setFirstBitOnBoard(ControllerBoard);
+//	int i;
+//	for(i=0;i<72;i++)
+//	{
+//		_delay_ms(700);
+//		shiftVectorOnBoard(ControllerBoard);
+//	}
+
+
+
+	CH_RESULT myResult = programHarness();
+	if(myResult == CH_OK)
+	{
+		GLCD_WriteText("Harness Programmed.");
+	}
+	else
+	{
+		GLCD_SetCursorAddress(120);
+		if(myResult == CH_NO_SD_CARD_PRESENT)
+		{
+			GLCD_WriteText("NO SD CARD.");
+		}
+		else if(myResult == INVALID_BOARD_SEQUENCE)
+		{
+			GLCD_WriteText("INVALID BOARD SEQUENCE");
+		}
+	}
+
+
+
+	//	setFirstBitOnBoard(DaughterBoard_One);
+	//	int i;
+	//	for(i=0;i<72;i++)
+	//	{
+	//		_delay_ms(700);
+	//		shiftVectorOnBoard(DaughterBoard_One);
+	//	}
 
 	/*do
 	 {
@@ -144,36 +187,84 @@ int main(void) {
 	DDRF |= (1 << PF0);
 	bit_set(PORTF, BIT(0));
 
-	DDRG |= (1 << PG4);
-	PORTG |= (1 << PG4);
 
-	_delay_us(1);
+	//	uint8_t test_vector[9];
+	//	int i,j;
+	//	char str[10];
+	//	unsigned int bytes_written;
+	//	FIL f_map;
+	//
+	//	if(f_open(&f_map,"/MAP.CHK",FA_READ | FA_WRITE | FA_OPEN_ALWAYS) != FR_OK)
+	//	{
+	//		GLCD_SetCursorAddress(0);
+	//		GLCD_WriteText("Error Opening");
+	//		return 2;
+	//	}
+	//
+	//	setFirstBitOnBoard(DaughterBoard_One);
+	//	for(i=0;i<72;i++)
+	//	{
+	//		GLCD_SetCursorAddress(120);
+	//		recieveTestVectorFromConnectedBoards(test_vector);
+	//		for(j=0;j<9;j++)
+	//		{
+	//			itoa(test_vector[j],str,2);
+	//			GLCD_WriteText(str);
+	//			GLCD_WriteText("-");
+	//		}
+	//
+	//		f_write(&f_map,test_vector,9,&bytes_written);
+	//		if(bytes_written == 0)
+	//		{
+	//			GLCD_ClearGraphic();
+	//			GLCD_ClearText();
+	//			GLCD_SetCursorAddress(0x00);
+	//			GLCD_WriteText("ERROR writing to MMC/SD Card. Contact supervisor.");
+	//			return 1;
+	//		}
+	//		//_delay_ms(100);
+	//		shiftVectorOnBoard(DaughterBoard_One);
+	//	}
+	//
+	//	GLCD_SetCursorAddress(160);
+	//	GLCD_WriteText("DONE");
+	//	f_close(&f_map);
 
-	char my_str[10];
 
-	WireInfo info;
-	WireInfo wires[7];
 
-	char buffer[2];
-	char str[10];
-	eepromRead(buffer,address,2);
-	itoa(buffer[0],str,10);
-	GLCD_SetCursorAddress(80);
-	GLCD_WriteText(str);
 
-	FIL f_map;
+	//	if(copyHarnessCircuitData() == 0)
+	//	{
+	//		GLCD_SetCursorAddress(40);
+	//		GLCD_WriteText("Copy Success.");
+	//	}
 
-	if(f_open(&f_map,"/MAP.CHK",FA_READ | FA_WRITE | FA_OPEN_ALWAYS) != FR_OK)
-	{
-		GLCD_SetCursorAddress(0);
-		GLCD_WriteText("Error Opening");
-		return 2;
-	}
+	//	uint8_t error_code = verifyHarnessCircuitData();
+	//	GLCD_SetCursorAddress(80);
+	//	if(error_code == 0)
+	//	{
+	//
+	//		GLCD_WriteText("Verification Success.");
+	//	}
+	//	else if(error_code == 2)
+	//	{
+	//		GLCD_WriteText("Read Error");
+	//	}
+	//	else if(error_code == 3)
+	//	{
+	//		GLCD_WriteText("Verification Failed.");
+	//	}
 
-	uint8_t test_vector[18];
-	int i,j; uint8_t position;
-	unsigned int bytes_written;
 
+	//	setFirstBitOnBoard(ControllerBoard);
+	//	for(i=0;i<72;i++)
+	//	{
+	//		_delay_ms(500);
+	//		shiftVectorOnBoard(ControllerBoard);
+	//	}
+
+
+	/*
 	setFirstBitOnBoard(ControllerBoard);
 	for(i=0;i<72;i++)
 	{
@@ -226,7 +317,7 @@ int main(void) {
 
 	GLCD_SetCursorAddress(160);
 	GLCD_WriteText("DONE");
-	f_close(&f_map);
+	f_close(&f_map);*/
 
 	return 0;
 }
