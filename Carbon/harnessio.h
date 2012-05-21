@@ -40,5 +40,5 @@ void getHarnessName(FIL *f_ptr, char harness_name[]);
 void readWireParameters(uint16_t wire_num, WireInfo *wireInfo);
 void readWireParametersFromIndices(uint16_t wire_positions[], WireInfo wireInfo[]);
 uint8_t copyHarnessCircuitData(void);
-uint8_t verifyHarnessCircuitData(void);
+uint8_t verifyCKTFile(void);
 #endif /* HARNESSIO_H_ */

@@ -130,35 +130,113 @@ int main(void) {
 	GLCD_WriteText(str);
 
 
-//	setFirstBitOnBoard(ControllerBoard);
-//	int i;
-//	for(i=0;i<72;i++)
-//	{
-//		_delay_ms(700);
-//		shiftVectorOnBoard(ControllerBoard);
-//	}
+	//	setFirstBitOnBoard(ControllerBoard);
+	//	int i;
+	//	for(i=0;i<72;i++)
+	//	{
+	//		_delay_ms(700);
+	//		shiftVectorOnBoard(ControllerBoard);
+	//	}
+	//
+	//	CH_RESULT myResult = programHarness();
+	//	if(myResult == CH_OK)
+	//	{
+	//		GLCD_WriteText("Harness Programmed.");
+	//	}
+	//	else
+	//	{
+	//		GLCD_SetCursorAddress(120);
+	//		if(myResult == CH_NO_SD_CARD_PRESENT)
+	//		{
+	//			GLCD_WriteText("NO SD CARD.");
+	//		}
+	//		else if(myResult == CH_INVALID_BOARD_SEQUENCE)
+	//		{
+	//			GLCD_WriteText("INVALID BOARD SEQUENCE");
+	//		}
+	//	}
 
 
 
-	CH_RESULT myResult = programHarness();
-	if(myResult == CH_OK)
+	//	FIL f_map;
+	//	if(copyCKTFileToEEPROM(&f_map) == CH_OK)
+	//	{
+	//		GLCD_SetCursorAddress(0);
+	//		GLCD_WriteText("Copy Successful.");
+	//	}
+
+	if(verifyCKTFile() == CH_OK)
 	{
-		GLCD_WriteText("Harness Programmed.");
+		GLCD_SetCursorAddress(40);
+		GLCD_WriteText("Verification Successful.");
 	}
 	else
 	{
-		GLCD_SetCursorAddress(120);
-		if(myResult == CH_NO_SD_CARD_PRESENT)
+		GLCD_SetCursorAddress(40);
+		GLCD_WriteText("Verification Failed.");
+	}
+
+	char buf[10];
+	uint16_t address = 32640;
+	eepromRead(buf,address,3);
+
+	//itoa(buf[0],str,16);
+	GLCD_SetCursorAddress(80);
+	GLCD_WriteText(buf);
+
+	uint8_t boards = 0xFF;
+	eepromRead(buf,address+3,1);
+	boards = buf[0];
+
+	GLCD_SetCursorAddress(200);
+	itoa(boards,str,10);
+	GLCD_WriteText(str);
+
+	uint8_t connectedBoards = initalizeDriverCPLDs();
+	//	GLCD_SetCursorAddress(240);
+	//	itoa(connectedBoards,str,10);
+	//	GLCD_WriteText(str);
+
+	if(boards == connectedBoards)
+	{
+		GLCD_SetCursorAddress(160);
+		GLCD_WriteText("INITALIZATION SUCCESSFUL");
+	}
+	else
+	{
+		GLCD_SetCursorAddress(160);
+		GLCD_WriteText("INITALIZATION FAILED");
+		connectedBoards = connectedBoards ^ boards;
+		GLCD_SetCursorAddress(200);
+		if(connectedBoards & (1 << 0))
 		{
-			GLCD_WriteText("NO SD CARD.");
+			GLCD_WriteText("Unable to initialize the ControllerBoard");
 		}
-		else if(myResult == INVALID_BOARD_SEQUENCE)
+		if(connectedBoards & (1 << 1))
 		{
-			GLCD_WriteText("INVALID BOARD SEQUENCE");
+			GLCD_WriteText("Unable to initialize DaughterBoard 1");
+
+		}
+		if(connectedBoards & (1 << 2))
+		{
+			GLCD_WriteText("Unable to initialize DaughterBoard 2");
+
+		}
+		if(connectedBoards & (1 << 3))
+		{
+			GLCD_WriteText("Unable to initialize DaughterBoard 3");
+
+		}
+		if(connectedBoards & (1 << 4))
+		{
+			GLCD_WriteText("Unable to initialize DaughterBoard 4");
+
 		}
 	}
 
 
+
+	//DDRB &= ~(1 << PB6);
 
 	//	setFirstBitOnBoard(DaughterBoard_One);
 	//	int i;

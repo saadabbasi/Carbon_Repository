@@ -12,38 +12,38 @@
 #include "harnessio.h"
 #include "macros.h"
 
-uint8_t verifyHarnessCircuitData(void)
-{
-	uint8_t buffer[EEPROM_PAGESIZE] = {0xFF};
-	char epbuffer[EEPROM_PAGESIZE] = {0xFF};
-	
-	FIL f_circuit_data;
-	if(f_open(&f_circuit_data,"/map.chk",FA_READ | FA_WRITE | FA_OPEN_EXISTING) != FR_OK)
-	{
-		return 1;
-	}
-	
-	uint16_t address = 0;
-	unsigned int bytesRead = 0;
-	do
-	{
-		if(f_read(&f_circuit_data,buffer,128,&bytesRead)!=FR_OK)
-		{
-			return 2;
-		}
-		eepromRead(epbuffer,address,EEPROM_PAGESIZE);
-		for(int j=0;j<bytesRead;j++)
-		{
-			if(buffer[j] != epbuffer[j])
-			{
-				return 3;
-			}
-		}
-		address = address + EEPROM_PAGESIZE;
-	}while(bytesRead == EEPROM_PAGESIZE);
-
-	return 0;
-}
+//uint8_t verifyHarnessCircuitData(void)
+//{
+//	uint8_t buffer[EEPROM_PAGESIZE] = {0xFF};
+//	char epbuffer[EEPROM_PAGESIZE] = {0xFF};
+//
+//	FIL f_circuit_data;
+//	if(f_open(&f_circuit_data,"/map.chk",FA_READ | FA_WRITE | FA_OPEN_EXISTING) != FR_OK)
+//	{
+//		return 1;
+//	}
+//
+//	uint16_t address = 0;
+//	unsigned int bytesRead = 0;
+//	do
+//	{
+//		if(f_read(&f_circuit_data,buffer,128,&bytesRead)!=FR_OK)
+//		{
+//			return 2;
+//		}
+//		eepromRead(epbuffer,address,EEPROM_PAGESIZE);
+//		for(int j=0;j<bytesRead;j++)
+//		{
+//			if(buffer[j] != epbuffer[j])
+//			{
+//				return 3;
+//			}
+//		}
+//		address = address + EEPROM_PAGESIZE;
+//	}while(bytesRead == EEPROM_PAGESIZE);
+//
+//	return 0;
+//}
 
 uint8_t copyHarnessCircuitData(void)
 {
