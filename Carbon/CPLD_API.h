@@ -35,6 +35,7 @@ CPLDRESULT initDriverCPLD(SPIDevice_t device);
 CPLDRESULT recieveTestVectorFromReceiver(SPIDevice_t device, uint8_t testVector[]); // returns a 72 point test vector from specified receiver CPLD.
 CPLDRESULT setFirstBitOnDriver(SPIDevice_t device);
 CPLDRESULT shiftVectorOnDriver(SPIDevice_t device);
+CPLDRESULT clearVector(SPIDevice_t device);
 uint8_t getSetBitPositionFromBoard(IO_Board board);
 
 #endif /* CPLD_API_H_ */

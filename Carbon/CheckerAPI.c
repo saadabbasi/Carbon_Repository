@@ -70,7 +70,7 @@ CH_RESULT copyCKTFileToEEPROM(FIL *file)
 {
 	uint8_t page = 128;
 	uint8_t buffer[128] = {0xFF};
-	uint8_t header[10];
+	uint8_t header[CKT_HEADER_LENGTH];
 
 	for(int i=0;i<128;i++)
 	{
@@ -87,7 +87,7 @@ CH_RESULT copyCKTFileToEEPROM(FIL *file)
 	uint16_t address = 0;
 	unsigned int bytesRead = 0;
 
-	if(f_read(file,header,sizeof(header),&bytesRead)!=FR_OK)
+	if(f_read(file,header,CKT_HEADER_LENGTH,&bytesRead)!=FR_OK)
 	{
 		return 2;
 	}
@@ -103,7 +103,7 @@ CH_RESULT copyCKTFileToEEPROM(FIL *file)
 	}
 
 	uint16_t headerAddress = CKT_HEADER_ADDR;
-	for(int i=0;i<10;i++)
+	for(int i=0;i<CKT_HEADER_LENGTH;i++)
 	{
 		buffer[i] = header[i];
 	}
@@ -130,12 +130,12 @@ CH_RESULT copyCKTFileToEEPROM(FIL *file)
 CH_RESULT programHarness(void)
 {
 	int i,j;
-	uint8_t header[10];
+	uint8_t header[10], board_count;
 	uint8_t test_vector[TPOINTS_BYTES];
 	unsigned int bytes_written;
 	FIL f_map;
 
-	uint8_t connectedBoards = initalizeDriverCPLDs();
+	uint8_t connectedBoards = initalizeDriverCPLDs(&board_count);
 	if(connectedBoards!=1 && connectedBoards!=3 && connectedBoards!=7 && connectedBoards!=15 && connectedBoards!=31)
 	{
 		return (CH_INVALID_BOARD_SEQUENCE);
@@ -154,16 +154,32 @@ CH_RESULT programHarness(void)
 	header[0] = 'C'; header[1] = 'K'; header[2] = 'T'; // "CKT" file identifier.
 	header[3] =	connectedBoards; // least 5 significant bits represent the boards connected.
 
+
 	for(int i=4; i<10; i++)
 	{
 		header[i] = 0xFF;
 	}
 
-
 	uint8_t driver, wire;
 	f_write(&f_map,header,sizeof(header),&bytes_written);
-	for(driver = 0; driver < 5; driver++)
+
+	for(driver = 0; driver < board_count; driver++)
 	{
+		if(clearVector(driver)!=CH_OK)
+		{
+			break;
+		}
+	}
+
+	for(driver = 0; driver < board_count; driver++)
+	{
+		for(int j = 0; j < board_count; j++)
+		{
+			if(clearVector(driver)!=CH_OK)
+			{
+				break;
+			}
+		}
 		if(setFirstBitOnDriver(driver)==CPLD_BOARD_ID_ERR)
 		{
 			GLCD_SetCursorAddress(160);
@@ -172,10 +188,8 @@ CH_RESULT programHarness(void)
 		}
 		for(wire=0;wire<72;wire++)
 		{
-			recieveTestVectorFromConnectedBoards(test_vector);
-			f_write(&f_map,test_vector,TPOINTS_BYTES,&bytes_written);
-			//f_sync(&f_map);
-			//bytes_written = 100;
+			recieveTestVectorFromConnectedBoards(test_vector, board_count);
+			f_write(&f_map,test_vector,BYTES_PER_BOARD*board_count,&bytes_written);
 			if(bytes_written == 0)
 			{
 				return 1;
@@ -193,7 +207,7 @@ CH_RESULT programHarness(void)
 	return (CH_OK);
 }
 
-uint8_t initalizeDriverCPLDs(void)
+uint8_t initalizeDriverCPLDs(uint8_t *board_count)
 {
 	uint8_t initedBoards = 0;
 	uint8_t driver;
@@ -206,29 +220,45 @@ uint8_t initalizeDriverCPLDs(void)
 		}
 	}
 
+	if(initedBoards == 1)
+	{
+		*board_count = 1;
+	}
+	else if(initedBoards == 3)
+	{
+		*board_count = 2;
+	}
+	else if(initedBoards == 7)
+	{
+		*board_count = 3;
+	}
+	else if(initedBoards == 15)
+	{
+		*board_count = 4;
+	}
+	else if(initedBoards == 31)
+	{
+		*board_count = 5;
+	}
+	else
+	{
+		*board_count = 0;
+	}
+
 	return (initedBoards);
 }
 
-void recieveTestVectorFromConnectedBoards(uint8_t test_vector[])
+void recieveTestVectorFromConnectedBoards(uint8_t test_vector[], uint8_t board_count)
 {
-	if(recieveTestVectorFromReceiver(B0_Rcv,test_vector) != CPLD_OK)
+	uint8_t count = 0;
+	uint8_t rcv_id = 5;
+	while(count < board_count)
 	{
-		return;
-	}
-	if(recieveTestVectorFromReceiver(B1_Rcv,test_vector) != CPLD_OK)
-	{
-		return;
-	}
-	if(recieveTestVectorFromReceiver(B2_Rcv,test_vector) != CPLD_OK)
-	{
-		return;
-	}
-	if(recieveTestVectorFromReceiver(B3_Rcv,test_vector) != CPLD_OK)
-	{
-		return;
-	}
-	if(recieveTestVectorFromReceiver(B4_Rcv,test_vector) != CPLD_OK)
-	{
-		return;
+		if(recieveTestVectorFromReceiver(rcv_id,test_vector) != CPLD_OK)
+		{
+			return;
+		}
+		rcv_id++;
+		count++;
 	}
 }

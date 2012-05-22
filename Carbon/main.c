@@ -123,7 +123,8 @@ int main(void) {
 	}
 
 	initSPI();
-	uint8_t test = initalizeDriverCPLDs();
+	uint8_t board_count;
+	uint8_t test = initalizeDriverCPLDs(&board_count);
 	itoa(test,str,10);
 
 	GLCD_SetCursorAddress(0);
@@ -138,23 +139,23 @@ int main(void) {
 	//		shiftVectorOnBoard(ControllerBoard);
 	//	}
 	//
-	//	CH_RESULT myResult = programHarness();
-	//	if(myResult == CH_OK)
-	//	{
-	//		GLCD_WriteText("Harness Programmed.");
-	//	}
-	//	else
-	//	{
-	//		GLCD_SetCursorAddress(120);
-	//		if(myResult == CH_NO_SD_CARD_PRESENT)
-	//		{
-	//			GLCD_WriteText("NO SD CARD.");
-	//		}
-	//		else if(myResult == CH_INVALID_BOARD_SEQUENCE)
-	//		{
-	//			GLCD_WriteText("INVALID BOARD SEQUENCE");
-	//		}
-	//	}
+	CH_RESULT myResult = programHarness();
+	if(myResult == CH_OK)
+	{
+		GLCD_WriteText("Harness Programmed.");
+	}
+	else
+	{
+		GLCD_SetCursorAddress(120);
+		if(myResult == CH_NO_SD_CARD_PRESENT)
+		{
+			GLCD_WriteText("NO SD CARD.");
+		}
+		else if(myResult == CH_INVALID_BOARD_SEQUENCE)
+		{
+			GLCD_WriteText("INVALID BOARD SEQUENCE");
+		}
+	}
 
 
 
@@ -192,11 +193,11 @@ int main(void) {
 	itoa(boards,str,10);
 	GLCD_WriteText(str);
 
-	uint8_t connectedBoards = initalizeDriverCPLDs();
-	//	GLCD_SetCursorAddress(240);
-	//	itoa(connectedBoards,str,10);
-	//	GLCD_WriteText(str);
+	uint8_t connectedBoards = initalizeDriverCPLDs(&board_count);
 
+	itoa(board_count,str,10);
+	GLCD_SetCursorAddress(240);
+	GLCD_WriteText(str);
 	if(boards == connectedBoards)
 	{
 		GLCD_SetCursorAddress(160);

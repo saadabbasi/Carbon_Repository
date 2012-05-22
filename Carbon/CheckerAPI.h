@@ -19,6 +19,7 @@
 
 #define TPOINTS 			360
 #define TPOINTS_BYTES		45
+#define BYTES_PER_BOARD		9
 #define CKT_HEADER_ADDR		32640
 #define CKT_HEADER_LENGTH	10
 
@@ -36,7 +37,7 @@ CH_RESULT readCKTHeader(FIL *file);
 CH_RESULT copyCKTFileToEEPROM(FIL *file);
 CH_RESULT verifyCKTFile(void);
 CH_RESULT programHarness(void);
-uint8_t initalizeDriverCPLDs(void);
-void recieveTestVectorFromConnectedBoards(uint8_t test_vector[]);
+uint8_t initalizeDriverCPLDs(uint8_t *count);
+void recieveTestVectorFromConnectedBoards(uint8_t test_vector[], uint8_t board_count);
 
 #endif /* CHECKERAPI_H_ */

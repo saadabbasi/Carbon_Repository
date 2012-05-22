@@ -7,6 +7,8 @@
 
 #include "CPLD_API.h"
 
+
+
 CPLDRESULT deviceIsADriver(SPIDevice_t device)
 {
 	if(device!=B0_Driver && device!=B1_Driver && device!=B2_Driver && device!=B3_Driver && device!=B4_Driver)
@@ -45,6 +47,8 @@ CPLDRESULT initDriverCPLD(SPIDevice_t device)
 
 	return (CPLD_OK);
 }
+
+
 
 CPLDRESULT recieveTestVectorFromReceiver(SPIDevice_t device, uint8_t testVector[]) // returns a 72 point test vector from specified daughterboard
 {
@@ -89,6 +93,18 @@ CPLDRESULT recieveTestVectorFromReceiver(SPIDevice_t device, uint8_t testVector[
 	{
 		testVector[i] = readByte();
 	}
+	selectDevice(DESELECT);
+	return CPLD_OK;
+}
+
+CPLDRESULT clearVector(SPIDevice_t device)
+{
+	if(deviceIsADriver(device) == CPLD_BOARD_ID_ERR)
+	{
+		return CPLD_BOARD_ID_ERR;
+	}
+	selectDevice(device);
+	writeByte(0x0F);
 	selectDevice(DESELECT);
 	return CPLD_OK;
 }
