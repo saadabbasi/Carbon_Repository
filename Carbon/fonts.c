@@ -10,6 +10,7 @@
 // 
 
 // Character bitmaps for ProFontWindows 20pt
+
 const unsigned char proFontWindows20ptBitmaps[] PROGMEM= 
 {
 		// @0 '0' (12 pixels wide)

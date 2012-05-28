@@ -76,7 +76,12 @@ void eepromRead(char buffer[], uint16_t address, uint8_t bytes_to_read)
 }
 void eepromChipErase(void)
 {
-
+	const uint8_t CHIPERASE = 0xC7;
+	writeEnable();
+	selectDevice(EEPROM);
+	writeByte(CHIPERASE);
+	selectDevice(DESELECT);
+	_delay_ms(100);
 }
 void eepromPageErase(void)
 {

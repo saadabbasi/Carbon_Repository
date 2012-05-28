@@ -13,10 +13,10 @@
 #include "sed1335.h"
 #include "25LC512.h"
 #include "constants.h"
-#include "harnessio.h"
 #include "SPIController.h"
 #include "CPLD_API.h"
 #include "CheckerAPI.h"
+#include "display.h"
 
 #define bit_get(p,m) ((p) & (m))
 #define bit_set(p,m) ((p) |= (m))
@@ -107,10 +107,147 @@ DWORD get_fattime(void) {
 #endif
 }
 
-uint8_t learnHarness(void);
+void startup(uint8_t *sys_board_count);
+CH_RESULT checkHarness(uint8_t board_count);
 
-int main(void) {
-	char str[10];
+enum state {ST_STARTUP, ST_IDLE, ST_CHECK};
+
+int main(void)
+{
+	enum state current_state = ST_STARTUP;
+	enum state prev_state = ST_STARTUP;
+	uint8_t check;
+	uint8_t board_count;
+	CH_RESULT checkResult = CH_OK;
+	DDRG |= (0 << PG1);
+	while(1)
+	{
+		switch (current_state)
+		{
+		case ST_STARTUP:
+			startup(&board_count);
+			prev_state = ST_STARTUP;
+			current_state = ST_IDLE;
+			break;
+		case ST_IDLE:
+			if(prev_state != ST_IDLE && checkResult == CH_OK)
+			{
+				displayMessage("CONNECT HARNESS");
+			}
+			check = (PING & (1 << PG1));
+			if(check == 0)
+			{
+				current_state = ST_CHECK;
+			}
+			prev_state = ST_IDLE;
+			break;
+		case ST_CHECK:
+			checkResult = checkHarness(board_count);
+			prev_state = ST_CHECK;
+			current_state = ST_IDLE;
+			break;
+		}
+	}
+
+
+	//	char str[10];
+	//	FATFS FileSystemObject;
+	//	GLCD_Initialize();
+	//
+	//	setupSPIPorts();
+	//	DDRG |= (1 << PG4); PORTG |= (1 << PG4);
+	//	//	PORTG &= ~(1 << PG4);
+	//
+	//	if (f_mount(0, &FileSystemObject) != FR_OK) {
+	//		return (0);
+	//	}
+	//
+	//	initSPI();
+	//	uint8_t board_count;
+	//	uint8_t test;
+	//	initalizeDriverCPLDs(&board_count,&test);
+	//	itoa(board_count,str,10);
+	//
+	//	GLCD_SetCursorAddress(0);
+	//	GLCD_WriteText(str);
+	//	//
+	//	WireInfo faulty_wires[7];
+	//	uint16_t fault_count;
+	//	CH_RESULT result = findFaultsAndReturnFaultyWireInfos(board_count, faulty_wires, &fault_count);
+	//	if(result!=CH_OK)
+	//	{
+	//		if(result == CH_WRONG_SLOT)
+	//		{
+	//			char fault_type[14] = "WRONG SLOT";
+	//			displayFaults(faulty_wires,fault_type,fault_count);
+	//		}
+	//		else if(result == CH_MISSING_WIRE)
+	//		{
+	//			char fault_type[14] = "MISSING WIRE";
+	//			displayFaults(faulty_wires,fault_type,fault_count);
+	//		}
+	//		else if(result == CH_SHORT_CIRCUIT)
+	//		{
+	//			char fault_type[14] = "SHORT CIRCUIT";
+	//			displayFaults(faulty_wires,fault_type,fault_count);
+	//		}
+	//	}
+	//	else if(result == CH_OK)
+	//	{
+	//		displayOKScreen();
+	//	}
+
+	//eepromChipErase();
+	//	DDRF |= (1 << PF0);
+	//	bit_set(PORTF, BIT(0));
+
+	//	copyCKTFileToEEPROM();
+	//	if(verifyCKTFile()==CH_OK)
+	//	{
+	//		GLCD_WriteText("CKT FILE OK!");
+	//	}
+	//programHarness(board_count,test);
+
+
+
+
+	return 0;
+}
+
+CH_RESULT checkHarness(uint8_t board_count)
+{
+	WireInfo faulty_wires[7];
+	uint16_t fault_count;
+	CH_RESULT result = findFaultsAndReturnFaultyWireInfos(board_count, faulty_wires, &fault_count);
+	if(result!=CH_OK)
+	{
+		if(result == CH_WRONG_SLOT)
+		{
+			char fault_type[14] = "WRONG SLOT";
+			displayFaults(faulty_wires,fault_type,fault_count);
+		}
+		else if(result == CH_MISSING_WIRE)
+		{
+			char fault_type[14] = "MISSING WIRE";
+			displayFaults(faulty_wires,fault_type,fault_count);
+		}
+		else if(result == CH_SHORT_CIRCUIT)
+		{
+			char fault_type[14] = "SHORT CIRCUIT";
+			displayFaults(faulty_wires,fault_type,fault_count);
+		}
+	}
+	else if(result == CH_OK)
+	{
+		displayOKScreen();
+		_delay_ms(1000);
+	}
+	return result;
+}
+
+
+void startup(uint8_t *sys_board_count)
+{
 	FATFS FileSystemObject;
 	GLCD_Initialize();
 
@@ -119,324 +256,21 @@ int main(void) {
 	//	PORTG &= ~(1 << PG4);
 
 	if (f_mount(0, &FileSystemObject) != FR_OK) {
-		return (0);
+		//return (0);
 	}
 
 	initSPI();
 	uint8_t board_count;
-	uint8_t test = initalizeDriverCPLDs(&board_count);
-	itoa(test,str,10);
-
-	GLCD_SetCursorAddress(0);
-	GLCD_WriteText(str);
-
-
-	//	setFirstBitOnBoard(ControllerBoard);
-	//	int i;
-	//	for(i=0;i<72;i++)
-	//	{
-	//		_delay_ms(700);
-	//		shiftVectorOnBoard(ControllerBoard);
-	//	}
-	//
-	CH_RESULT myResult = programHarness();
-	if(myResult == CH_OK)
+	uint8_t boardSeq;
+	initalizeDriverCPLDs(&board_count,&boardSeq);
+	uint8_t storedBoardSeq = returnStoredBoardSequence();
+	if(checkBoardSequence(boardSeq)==CH_OK)
 	{
-		GLCD_WriteText("Harness Programmed.");
-	}
-	else
-	{
-		GLCD_SetCursorAddress(120);
-		if(myResult == CH_NO_SD_CARD_PRESENT)
+		if(boardSeq == storedBoardSeq)
 		{
-			GLCD_WriteText("NO SD CARD.");
-		}
-		else if(myResult == CH_INVALID_BOARD_SEQUENCE)
-		{
-			GLCD_WriteText("INVALID BOARD SEQUENCE");
+			GLCD_SetCursorAddress(0);
+			GLCD_WriteText("ALL OK");
+			*sys_board_count = board_count;
 		}
 	}
-
-
-
-	//	FIL f_map;
-	//	if(copyCKTFileToEEPROM(&f_map) == CH_OK)
-	//	{
-	//		GLCD_SetCursorAddress(0);
-	//		GLCD_WriteText("Copy Successful.");
-	//	}
-
-	if(verifyCKTFile() == CH_OK)
-	{
-		GLCD_SetCursorAddress(40);
-		GLCD_WriteText("Verification Successful.");
-	}
-	else
-	{
-		GLCD_SetCursorAddress(40);
-		GLCD_WriteText("Verification Failed.");
-	}
-
-	char buf[10];
-	uint16_t address = 32640;
-	eepromRead(buf,address,3);
-
-	//itoa(buf[0],str,16);
-	GLCD_SetCursorAddress(80);
-	GLCD_WriteText(buf);
-
-	uint8_t boards = 0xFF;
-	eepromRead(buf,address+3,1);
-	boards = buf[0];
-
-	GLCD_SetCursorAddress(200);
-	itoa(boards,str,10);
-	GLCD_WriteText(str);
-
-	uint8_t connectedBoards = initalizeDriverCPLDs(&board_count);
-
-	itoa(board_count,str,10);
-	GLCD_SetCursorAddress(240);
-	GLCD_WriteText(str);
-	if(boards == connectedBoards)
-	{
-		GLCD_SetCursorAddress(160);
-		GLCD_WriteText("INITALIZATION SUCCESSFUL");
-	}
-	else
-	{
-		GLCD_SetCursorAddress(160);
-		GLCD_WriteText("INITALIZATION FAILED");
-		connectedBoards = connectedBoards ^ boards;
-		GLCD_SetCursorAddress(200);
-		if(connectedBoards & (1 << 0))
-		{
-			GLCD_WriteText("Unable to initialize the ControllerBoard");
-		}
-		if(connectedBoards & (1 << 1))
-		{
-			GLCD_WriteText("Unable to initialize DaughterBoard 1");
-
-		}
-		if(connectedBoards & (1 << 2))
-		{
-			GLCD_WriteText("Unable to initialize DaughterBoard 2");
-
-		}
-		if(connectedBoards & (1 << 3))
-		{
-			GLCD_WriteText("Unable to initialize DaughterBoard 3");
-
-		}
-		if(connectedBoards & (1 << 4))
-		{
-			GLCD_WriteText("Unable to initialize DaughterBoard 4");
-
-		}
-	}
-
-
-
-	//DDRB &= ~(1 << PB6);
-
-	//	setFirstBitOnBoard(DaughterBoard_One);
-	//	int i;
-	//	for(i=0;i<72;i++)
-	//	{
-	//		_delay_ms(700);
-	//		shiftVectorOnBoard(DaughterBoard_One);
-	//	}
-
-	/*do
-	 {
-	 if(f_read(&f_harness,eeprom_buffer,128,&bytesRead)!=FR_OK)
-	 {
-	 GLCD_SetCursorAddress(0);
-	 GLCD_WriteText("Cannot Read File");
-	 return 0;
-	 }
-	 writeBuffer(eeprom_buffer,address);
-	 address = address + 128;
-	 }while(bytesRead == 128);
-
-	 f_close(&f_harness);
-	 f_mount(0,0);*/
-
-
-	DDRF |= (1 << PF0);
-	bit_set(PORTF, BIT(0));
-
-
-	//	uint8_t test_vector[9];
-	//	int i,j;
-	//	char str[10];
-	//	unsigned int bytes_written;
-	//	FIL f_map;
-	//
-	//	if(f_open(&f_map,"/MAP.CHK",FA_READ | FA_WRITE | FA_OPEN_ALWAYS) != FR_OK)
-	//	{
-	//		GLCD_SetCursorAddress(0);
-	//		GLCD_WriteText("Error Opening");
-	//		return 2;
-	//	}
-	//
-	//	setFirstBitOnBoard(DaughterBoard_One);
-	//	for(i=0;i<72;i++)
-	//	{
-	//		GLCD_SetCursorAddress(120);
-	//		recieveTestVectorFromConnectedBoards(test_vector);
-	//		for(j=0;j<9;j++)
-	//		{
-	//			itoa(test_vector[j],str,2);
-	//			GLCD_WriteText(str);
-	//			GLCD_WriteText("-");
-	//		}
-	//
-	//		f_write(&f_map,test_vector,9,&bytes_written);
-	//		if(bytes_written == 0)
-	//		{
-	//			GLCD_ClearGraphic();
-	//			GLCD_ClearText();
-	//			GLCD_SetCursorAddress(0x00);
-	//			GLCD_WriteText("ERROR writing to MMC/SD Card. Contact supervisor.");
-	//			return 1;
-	//		}
-	//		//_delay_ms(100);
-	//		shiftVectorOnBoard(DaughterBoard_One);
-	//	}
-	//
-	//	GLCD_SetCursorAddress(160);
-	//	GLCD_WriteText("DONE");
-	//	f_close(&f_map);
-
-
-
-
-	//	if(copyHarnessCircuitData() == 0)
-	//	{
-	//		GLCD_SetCursorAddress(40);
-	//		GLCD_WriteText("Copy Success.");
-	//	}
-
-	//	uint8_t error_code = verifyHarnessCircuitData();
-	//	GLCD_SetCursorAddress(80);
-	//	if(error_code == 0)
-	//	{
-	//
-	//		GLCD_WriteText("Verification Success.");
-	//	}
-	//	else if(error_code == 2)
-	//	{
-	//		GLCD_WriteText("Read Error");
-	//	}
-	//	else if(error_code == 3)
-	//	{
-	//		GLCD_WriteText("Verification Failed.");
-	//	}
-
-
-	//	setFirstBitOnBoard(ControllerBoard);
-	//	for(i=0;i<72;i++)
-	//	{
-	//		_delay_ms(500);
-	//		shiftVectorOnBoard(ControllerBoard);
-	//	}
-
-
-	/*
-	setFirstBitOnBoard(ControllerBoard);
-	for(i=0;i<72;i++)
-	{
-		GLCD_SetCursorAddress(120);
-		recieveTestVectorFromConnectedBoards(test_vector);
-		for(j=0;j<18;j++)
-		{
-			itoa(test_vector[j],str,2);
-			GLCD_WriteText(str);
-			GLCD_WriteText("-");
-		}
-
-		f_write(&f_map,test_vector,18,&bytes_written);
-		if(bytes_written == 0)
-		{
-			GLCD_ClearGraphic();
-			GLCD_ClearText();
-			GLCD_SetCursorAddress(0x00);
-			GLCD_WriteText("ERROR writing to MMC/SD Card. Contact supervisor.");
-			return 1;
-		}
-		//_delay_ms(100);
-		shiftVectorOnBoard(ControllerBoard);
-	}
-
-	setFirstBitOnBoard(DaughterBoard_One);
-	for(i=0;i<72;i++)
-	{
-		GLCD_SetCursorAddress(120);
-		recieveTestVectorFromConnectedBoards(test_vector);
-		for(j=0;j<18;j++)
-		{
-			itoa(test_vector[j],str,2);
-			GLCD_WriteText(str);
-			GLCD_WriteText("-");
-		}
-
-		f_write(&f_map,test_vector,18,&bytes_written);
-		if(bytes_written == 0)
-		{
-			GLCD_ClearGraphic();
-			GLCD_ClearText();
-			GLCD_SetCursorAddress(0x00);
-			GLCD_WriteText("ERROR writing to MMC/SD Card. Contact supervisor.");
-			return 1;
-		}
-		//_delay_ms(100);
-		shiftVectorOnBoard(DaughterBoard_One);
-	}
-
-	GLCD_SetCursorAddress(160);
-	GLCD_WriteText("DONE");
-	f_close(&f_map);*/
-
-	return 0;
-}
-
-uint8_t learnHarness(void)
-{
-	_delay_ms(1000);
-	unsigned int bytes_written;
-	uint16_t total_bytes_written = 0;
-	uint8_t recieved_vector[TESTPOINTS/8];
-
-	FIL f_map;
-
-	if(f_open(&f_map,"/MAP.CHK",FA_READ | FA_WRITE | FA_OPEN_ALWAYS) != FR_OK)
-	{
-		GLCD_SetCursorAddress(0);
-		GLCD_WriteText("Error Opening");
-		return 2;
-	}
-
-	setFirstBit();
-
-	for(int i=0;i<TESTPOINTS;i++)
-	{
-		recieveTestVector(recieved_vector);
-		f_write(&f_map,recieved_vector,TESTPOINTS/8,&bytes_written);
-		if(bytes_written == 0)
-		{
-			GLCD_ClearGraphic();
-			GLCD_ClearText();
-			GLCD_SetCursorAddress(0x00);
-			GLCD_WriteText("ERROR writing to MMC/SD Card. Contact supervisor.");
-			return 1;
-		}
-		total_bytes_written = total_bytes_written + bytes_written;
-		GLCD_SetCursorAddress(0x00);
-
-		shiftLeft();
-	}
-	f_close(&f_map);
-
-	return 0;
 }
