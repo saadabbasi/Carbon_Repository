@@ -10,6 +10,7 @@
 
 void initSPI(void)
 {
+	// SPI BUS SPEED SET TO 1 MHz.
 	SPCR = (1 << SPE) | (1 << MSTR) | (0 << CPHA) | (0 << CPOL) | (0 << SPR1) | (0 << SPR0);
 	SPSR = (0 << SPI2X);
 	_delay_us(1);

@@ -8,6 +8,27 @@
 
 #include "CheckerAPI.h"
 
+CH_RESULT isEEPROMErased(void)
+{
+	// This function checks to see if a eeproomChipErase() was successful.
+
+	uint16_t address = 0;
+	char buffer[EEPROM_PAGESIZE];
+	for(int i=0;i<EEPROM_SIZE/EEPROM_PAGESIZE;i++)
+	{
+		eepromRead(buffer,address,128);
+		address = address + EEPROM_PAGESIZE;
+		for(int j=0;j<EEPROM_PAGESIZE;j++)
+		{
+			if(buffer[j]!=0xFF)
+			{
+				return CH_NOT_ERASED;
+			}
+		}
+	}
+	return CH_OK;
+}
+
 void readWireParametersFromIndices(int16_t wire_positions[], WireInfo wireInfo[])
 {
 	for(int i=0;i<7;i++)
@@ -41,37 +62,35 @@ CH_RESULT findFaultsAndReturnFaultyWireInfos(uint8_t board_count, WireInfo fault
 	uint8_t opens[TPOINTS_BYTES], shorts[TPOINTS_BYTES];
 	uint8_t wire;
 	int16_t fault_locations[TPOINTS];
-	char str[10];
 
 	uint8_t total_bytes = BYTES_PER_BOARD*board_count;
-
+	char str[10];
 	for(driver = 0; driver < board_count; driver++)
 	{
-		if(clearVector(driver)!=CH_OK)
-		{
-			break;
-		}
-	}
-
-	for(driver = 0; driver < board_count; driver++)
-	{
+		// Ensure all drivers' registers are 0 before driving a test vector onto one of them.
 		for(int j = 0; j < board_count; j++)
 		{
-			if(clearVector(driver)!=CH_OK)
+			if(clearVector(j)!=CH_OK)
 			{
 				break;
 			}
 		}
 		if(setFirstBitOnDriver(driver)==CPLD_BOARD_ID_ERR)
 		{
-			GLCD_SetCursorAddress(160);
-			GLCD_WriteText("CPLD_BOARD_ID_ERROR DURING SETTING FIRST BIT.");
 			break;
 		}
 		for(wire=0;wire<72;wire++)
 		{
 			recieveTestVectorFromConnectedBoards(test_vector, board_count);
-			getCKTInfo(wire+driver*TPOINTS_PER_BOARD,total_bytes,cktInfo);
+			//			GLCD_SetCursorAddress(0);
+			//			for(int k=0;k<45;k++)
+			//			{
+			//				itoa(test_vector[k],str,2);
+			//				GLCD_WriteText(str);
+			//				GLCD_WriteText("-");
+			//			}
+			//			_delay_ms(100);
+			getCKTInfo(wire+driver*TPOINTS_PER_BOARD,total_bytes,cktInfo); // retreive stored test vector.
 			uint16_t fault_count = detectFaultsAndReturnCount(cktInfo,test_vector,faults,total_bytes);
 			uint16_t open_circuit_count = detectOpenCircuitsAndReturnCount(cktInfo,test_vector,opens,total_bytes);
 			uint16_t short_circuit_count = detectShortCircuitsAndReturnCount(cktInfo,faults,shorts,total_bytes);
@@ -106,10 +125,11 @@ CH_RESULT findFaultsAndReturnFaultyWireInfos(uint8_t board_count, WireInfo fault
 					return CH_SHORT_CIRCUIT;
 				}
 			}
+
 			if(shiftVectorOnDriver(driver)==CPLD_BOARD_ID_ERR)
 			{
-				GLCD_SetCursorAddress(160);
-				GLCD_WriteText("CPLD_BOARD_ID_ERROR DURING SHIFTING VECTOR.");
+				//GLCD_SetCursorAddress(160);
+				//GLCD_WriteText("CPLD_BOARD_ID_ERROR DURING SHIFTING VECTOR.");
 				break;
 			}
 		}
@@ -118,13 +138,12 @@ CH_RESULT findFaultsAndReturnFaultyWireInfos(uint8_t board_count, WireInfo fault
 	return CH_OK;
 }
 
-CH_RESULT getCKTInfo(uint16_t ckt, uint16_t vector_size, char cktInfo[])
+CH_RESULT getCKTInfo(uint16_t ckt, uint16_t vector_size, uint8_t cktInfo[])
 {
 	//cktInfo[] MUST be 45 bytes in length.
-	char str[3];
 	uint16_t address = ckt*vector_size;
 
-	eepromRead(cktInfo,address,vector_size);
+	eepromRead((char*)cktInfo,address,vector_size);
 
 	//GLCD_SetCursorAddress(400);
 	//	for(int i=0;i<vector_size;i++)
@@ -240,8 +259,8 @@ CH_RESULT copyCKTFileToEEPROM(void)
 
 	if(f_open(&file,"/map.chk",FA_READ | FA_WRITE | FA_OPEN_EXISTING) != FR_OK)
 	{
-		GLCD_SetCursorAddress(0);
-		GLCD_WriteText("Cannot Open File.");
+		//GLCD_SetCursorAddress(0);
+		//GLCD_WriteText("Cannot Open File.");
 		return 1;
 	}
 
@@ -275,8 +294,8 @@ CH_RESULT copyCKTFileToEEPROM(void)
 	{
 		if(f_read(&file,buffer,page,&bytesRead)!=FR_OK)
 		{
-			GLCD_SetCursorAddress(0);
-			GLCD_WriteText("Cannot Read File");
+			//GLCD_SetCursorAddress(0);
+			//GLCD_WriteText("Cannot Read File");
 			return 2;
 		}
 		eepromWritePage(buffer,address);
@@ -323,8 +342,8 @@ CH_RESULT copyLOCFileToEEPROM(void)
 	{
 		if(f_read(&f_loc,buffer,EEPROM_PAGESIZE,&bytesRead)!=FR_OK)
 		{
-			GLCD_SetCursorAddress(0);
-			GLCD_WriteText("Cannot Read File");
+			//GLCD_SetCursorAddress(0);
+			//GLCD_WriteText("Cannot Read File");
 			return 2;
 		}
 		eepromWritePage(buffer,address);
@@ -385,7 +404,6 @@ CH_RESULT verifyLOCFile(void)
 
 CH_RESULT programHarness(uint8_t board_count, uint8_t connectedBoards)
 {
-	int i,j;
 	uint8_t header[10];
 	uint8_t test_vector[TPOINTS_BYTES];
 	unsigned int bytes_written;
@@ -395,6 +413,8 @@ CH_RESULT programHarness(uint8_t board_count, uint8_t connectedBoards)
 	{
 		return (1);
 	}
+	SPCR = (1 << SPE) | (1 << MSTR) | (0 << CPHA) | (0 << CPOL) | (0 << SPR1) | (1 << SPR0);
+	SPSR = (1 << SPI2X);
 
 	/* As driver IDs (see SPIController.h) start from 0 and end at 4, the for loop
 	 * uses the integer values directly to set and shift the CPLDs. This helps
@@ -432,8 +452,8 @@ CH_RESULT programHarness(uint8_t board_count, uint8_t connectedBoards)
 		}
 		if(setFirstBitOnDriver(driver)==CPLD_BOARD_ID_ERR)
 		{
-			GLCD_SetCursorAddress(160);
-			GLCD_WriteText("CPLD_BOARD_ID_ERROR DURING SETTING FIRST BIT.");
+			//GLCD_SetCursorAddress(160);
+			//GLCD_WriteText("CPLD_BOARD_ID_ERROR DURING SETTING FIRST BIT.");
 			break;
 		}
 		for(wire=0;wire<72;wire++)
@@ -446,8 +466,8 @@ CH_RESULT programHarness(uint8_t board_count, uint8_t connectedBoards)
 			}
 			if(shiftVectorOnDriver(driver)==CPLD_BOARD_ID_ERR)
 			{
-				GLCD_SetCursorAddress(160);
-				GLCD_WriteText("CPLD_BOARD_ID_ERROR DURING SHIFTING VECTOR.");
+				//GLCD_SetCursorAddress(160);
+				//GLCD_WriteText("CPLD_BOARD_ID_ERROR DURING SHIFTING VECTOR.");
 				break;
 			}
 		}
@@ -501,6 +521,21 @@ CH_RESULT initalizeDriverCPLDs(uint8_t *board_count, uint8_t *inited_boards)
 	}
 
 	return CH_OK;
+}
+
+uint8_t detectedCPLDs(void)
+{
+	uint8_t driver;
+	uint8_t inited_boards = 0;
+	for(driver = 0; driver < MAX_DAUGHTER_BOARDS; driver++)
+	{
+		if(initDriverCPLD(driver) == CPLD_OK)
+		{
+			inited_boards |= (1 << driver);
+		}
+	}
+
+	return inited_boards;
 }
 
 void recieveTestVectorFromConnectedBoards(uint8_t test_vector[], uint8_t board_count)

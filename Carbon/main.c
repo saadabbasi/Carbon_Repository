@@ -107,111 +107,306 @@ DWORD get_fattime(void) {
 #endif
 }
 
-void startup(uint8_t *sys_board_count);
+CH_RESULT startup(uint8_t *sys_board_count,uint8_t *sys_board_sequence);
 CH_RESULT checkHarness(uint8_t board_count);
 
-enum state {ST_STARTUP, ST_IDLE, ST_CHECK};
+const uint8_t MN100[] = "About";
+const uint8_t MN200[] = "Configure Checker";
+const uint8_t MN300[] = "Self Learn";
+const uint8_t MN400[] = "Self Diagnostic";
+const uint8_t MN500[] = "Output LED Sequence";
+const uint8_t MN600[] = "Erase Checker";
+const uint8_t MN700[] = "Copy EEPROM To SD Card";
+
+
+const uint8_t *MENU[] = {
+		MN100,
+		MN200,
+		MN300,
+		MN400,
+		MN500,
+		MN600,
+		MN700
+};
+
+const uint8_t menu_count = 6;
+
+void configureChecker(void);
+void selfLearn(void);
+void selfDiagnostic(void);
+void about(void);
+void eraseChecker(void);
+void LEDSequence(void);
+void copyEEPROMToSDCard(void);
+
+typedef void(*FuncPtr)(void);
+
+const FuncPtr FuncPtrTable[] = {
+		about,
+		configureChecker,
+		selfLearn,
+		selfDiagnostic,
+		LEDSequence,
+		eraseChecker,
+		copyEEPROMToSDCard
+};
+
+struct Menu_State{
+	uint8_t menuNo;//1,2,3,4
+	uint8_t subMenuNo;//1,2,3
+}MN;
+
+enum state {ST_STARTUP, ST_IDLE, ST_CHECK, ST_STARTUP_FAULT, ST_PROGRAM, ST_COPYTOEEPROM, ST_SHOWMENU, ST_WAIT_MENU_INPUT};
 
 int main(void)
 {
+	FATFS FileSystemObject;
 	enum state current_state = ST_STARTUP;
-	enum state prev_state = ST_STARTUP;
 	uint8_t check;
-	uint8_t board_count;
-	CH_RESULT checkResult = CH_OK;
+	uint8_t board_count, sys_board_sequence;
+	uint8_t hardware_fault = 0;
+	//	CH_RESULT checkResult = CH_OK;
+	CH_RESULT startupResult;
 	DDRG |= (0 << PG1);
+	DDRG |= (1 << PG4);
+	DDRB |= (0 << PB6);
+	DDRA = 0x00;
+	uint8_t learn;
+	uint8_t copy_to_eeprom;
+	//	char str[10];
+
+	uint8_t config_jumper;
+	uint8_t boardSeq;
+
+	char str[10];
+	int i;
+
+	MN.menuNo = 0;
+	uint8_t up, down;
+
 	while(1)
 	{
 		switch (current_state)
 		{
 		case ST_STARTUP:
-			startup(&board_count);
-			prev_state = ST_STARTUP;
+			startupResult = startup(&board_count,&sys_board_sequence);
+			if (f_mount(0, &FileSystemObject) != FR_OK) {
+				//return (0);
+			}
+
+			if(startupResult == CH_INVALID_BOARD_SEQUENCE)
+			{
+				current_state = ST_STARTUP_FAULT;
+			}
+			else if(startupResult == CH_OK)
+			{
+				displayMessage("CHECKER READY.");
+				current_state = ST_IDLE;
+			}
+			break;
+		case ST_STARTUP_FAULT:
+			displayMessage("HARDWARE FAULT.");
+			hardware_fault = 1;
 			current_state = ST_IDLE;
 			break;
 		case ST_IDLE:
-			if(prev_state != ST_IDLE && checkResult == CH_OK)
+			config_jumper = (PINB & (1 << PB6));
+			if(config_jumper == 0)
 			{
-				displayMessage("CONNECT HARNESS");
+				current_state = ST_SHOWMENU;
 			}
-			check = (PING & (1 << PG1));
-			if(check == 0)
+
+			if(!hardware_fault)
 			{
-				current_state = ST_CHECK;
+				check = (PING & (1 << PG1));
+				//check = 0;
+
+				if(check == 0)
+				{
+					current_state = ST_CHECK;
+				}
 			}
-			prev_state = ST_IDLE;
+
+			break;
+		case ST_PROGRAM:
+			displayMessage("PROG. MODE");
+			initalizeDriverCPLDs(&board_count,&boardSeq);
+			if(programHarness(board_count,boardSeq) == CH_OK)
+			{
+				displayMessage("LEARNED");
+			}
+			else
+			{
+				displayMessage("FAIL");
+			}
+			_delay_ms(3000);
+			current_state = ST_IDLE;
+			break;
+		case ST_COPYTOEEPROM:
+			GLCD_ClearGraphic();
+			GLCD_ClearText();
+
+			eepromRemoveProtectionFromAllSectors();
+			while(eepromWriteInProgress())
+			{
+				// wait.
+			}
+			uint8_t status_reg = eepromReadStatusRegister();
+			if((status_reg & 0x00) == 0x00)
+			{
+				GLCD_SetCursorAddress(0);
+				GLCD_WriteText("EEPROM Write Protection Disabled.");
+				GLCD_SetCursorAddress(40);
+				GLCD_WriteText("Erasing EEPROM Contents...");
+				GLCD_SetCursorAddress(80);
+
+				eepromChipErase();
+				if(isEEPROMErased() != CH_OK)
+				{
+					GLCD_WriteText("Unable to erase EEPROM contents.");
+				}
+				else
+				{
+					GLCD_WriteText("EEPROM Erased.");
+					if(copyCKTFileToEEPROM() == CH_OK)
+					{
+						GLCD_SetCursorAddress(120);
+						GLCD_WriteText("CKT file copied.");
+						if(verifyCKTFile() == CH_OK)
+						{
+							GLCD_SetCursorAddress(160);
+							GLCD_WriteText("CKT file verified.");
+
+							if(copyLOCFileToEEPROM() == CH_OK)
+							{
+								GLCD_SetCursorAddress(200);
+								GLCD_WriteText("LOC file copied.");
+								if(verifyLOCFile() == CH_OK)
+								{
+									GLCD_SetCursorAddress(240);
+									GLCD_WriteText("LOC file verified.");
+								}
+							}
+						}
+					}
+				}
+
+			}
+			eepromWriteProtectAllSectors();
+			status_reg = eepromReadStatusRegister();
+			_delay_ms(3000); // this delay is essential because the input switches stay high for some time.
+			if(status_reg && 0x0C)
+			{
+				GLCD_SetCursorAddress(280);
+				GLCD_WriteText("EEPROM Write Protection Enabled.");
+				GLCD_SetCursorAddress(320);
+				GLCD_WriteText("Checker configuration completed.");
+			}
+			current_state = ST_IDLE;
+
 			break;
 		case ST_CHECK:
-			checkResult = checkHarness(board_count);
-			prev_state = ST_CHECK;
+			displayMessage("CHECKING");
+			checkHarness(board_count);
 			current_state = ST_IDLE;
+
+			break;
+		case ST_SHOWMENU:
+			GLCD_ClearGraphic();
+			GLCD_ClearText();
+			GLCD_SetCursorAddress(34);
+			GLCD_WriteText(VERSION_STR);
+			for(i=0;i<=menu_count;i++)
+			{
+				GLCD_SetCursorAddress(50+i*40);
+				GLCD_WriteText(MENU[i]);
+			}
+
+			GLCD_SetCursorAddress(45+MN.menuNo*40);
+			GLCD_WriteText("*");
+			current_state = ST_WAIT_MENU_INPUT;
+			break;
+
+		case ST_WAIT_MENU_INPUT:
+			up = (PINA & (1 << PA3));
+			down = (PINA & (1 << PA2));
+			if(up == 8)
+			{
+				_delay_ms(3000);
+				//				if(MN.menuNo == 0)
+				//				{
+				//					MN.menuNo = MSTR2[0];
+				//				}
+				//				else
+				//				{
+				//					MN.menuNo--;
+				//				}
+				//				current_state = ST_SHOWMENU;
+				FuncPtrTable[MN.menuNo]();
+				current_state = ST_SHOWMENU;
+			}
+
+			if(down == 4)
+			{
+				_delay_ms(2000);
+				if(MN.menuNo < menu_count)
+				{
+					MN.menuNo++;
+				}
+				else
+				{
+					MN.menuNo = 0;
+				}
+				current_state = ST_SHOWMENU;
+			}
+
+			config_jumper = (PINB & (1 << PB6));
+			if(config_jumper != 0)
+			{
+				GLCD_ClearGraphic();
+				GLCD_ClearText();
+				current_state = ST_IDLE;
+			}
+
 			break;
 		}
 	}
 
-
-	//	char str[10];
-	//	FATFS FileSystemObject;
-	//	GLCD_Initialize();
-	//
-	//	setupSPIPorts();
-	//	DDRG |= (1 << PG4); PORTG |= (1 << PG4);
-	//	//	PORTG &= ~(1 << PG4);
-	//
-	//	if (f_mount(0, &FileSystemObject) != FR_OK) {
-	//		return (0);
-	//	}
-	//
-	//	initSPI();
-	//	uint8_t board_count;
-	//	uint8_t test;
-	//	initalizeDriverCPLDs(&board_count,&test);
-	//	itoa(board_count,str,10);
-	//
-	//	GLCD_SetCursorAddress(0);
-	//	GLCD_WriteText(str);
-	//	//
-	//	WireInfo faulty_wires[7];
-	//	uint16_t fault_count;
-	//	CH_RESULT result = findFaultsAndReturnFaultyWireInfos(board_count, faulty_wires, &fault_count);
-	//	if(result!=CH_OK)
-	//	{
-	//		if(result == CH_WRONG_SLOT)
-	//		{
-	//			char fault_type[14] = "WRONG SLOT";
-	//			displayFaults(faulty_wires,fault_type,fault_count);
-	//		}
-	//		else if(result == CH_MISSING_WIRE)
-	//		{
-	//			char fault_type[14] = "MISSING WIRE";
-	//			displayFaults(faulty_wires,fault_type,fault_count);
-	//		}
-	//		else if(result == CH_SHORT_CIRCUIT)
-	//		{
-	//			char fault_type[14] = "SHORT CIRCUIT";
-	//			displayFaults(faulty_wires,fault_type,fault_count);
-	//		}
-	//	}
-	//	else if(result == CH_OK)
-	//	{
-	//		displayOKScreen();
-	//	}
-
-	//eepromChipErase();
-	//	DDRF |= (1 << PF0);
-	//	bit_set(PORTF, BIT(0));
-
-	//	copyCKTFileToEEPROM();
-	//	if(verifyCKTFile()==CH_OK)
-	//	{
-	//		GLCD_WriteText("CKT FILE OK!");
-	//	}
-	//programHarness(board_count,test);
-
-
-
-
 	return 0;
+}
+
+CH_RESULT startup(uint8_t *sys_board_count, uint8_t *sys_board_sequence)
+{
+	GLCD_Initialize();
+
+	setupSPIPorts();
+	DDRG |= (1 << PG4); PORTG |= (1 << PG4);
+	//	PORTG &= ~(1 << PG4);
+
+
+
+	initSPI();
+	uint8_t board_count;
+	uint8_t boardSeq;
+	initalizeDriverCPLDs(&board_count,&boardSeq);
+	uint8_t storedBoardSeq = returnStoredBoardSequence();
+
+
+
+
+	if(checkBoardSequence(boardSeq) != CH_OK)
+	{
+		return CH_INVALID_BOARD_SEQUENCE;
+	}
+	*sys_board_count = board_count;
+
+	if(boardSeq != storedBoardSeq)
+	{
+		return CH_INVALID_BOARD_SEQUENCE;
+	}
+	*sys_board_sequence = storedBoardSeq;
+
+	return CH_OK;
 }
 
 CH_RESULT checkHarness(uint8_t board_count)
@@ -241,36 +436,260 @@ CH_RESULT checkHarness(uint8_t board_count)
 	{
 		displayOKScreen();
 		_delay_ms(1000);
+		displayMessage("CONNECT HARNESS");
 	}
 	return result;
 }
 
-
-void startup(uint8_t *sys_board_count)
+void configureChecker(void)
 {
-	FATFS FileSystemObject;
-	GLCD_Initialize();
+	uint16_t address;
+	uint8_t up, down;
 
-	setupSPIPorts();
-	DDRG |= (1 << PG4); PORTG |= (1 << PG4);
-	//	PORTG &= ~(1 << PG4);
+	GLCD_ClearGraphic();
+	GLCD_ClearText();
 
-	if (f_mount(0, &FileSystemObject) != FR_OK) {
-		//return (0);
+	//	address = 0; GLCD_SetCursorAddress(address);
+	//	GLCD_WriteText("This option will erase all contents of the Checker.");
+	//
+	//	GLCD_WriteText("");
+	//	address += 40; GLCD_SetCursorAddress(address);
+	//	GLCD_WriteText("Press OK to continue and Cancel to return to menu.");
+
+	//	while(1)
+	//	{
+	//		up = (PINA & (1 << PA3));
+	//		down = (PINA & (1 << PA2));
+	//		if(up == 8)
+	//		{
+	//			_delay_ms(2000);
+	//			break;
+	//		}
+	//		if(down == 4)
+	//		{
+	//			_delay_ms(2000);
+	//			return;
+	//		}
+	//	}
+
+	eepromRemoveProtectionFromAllSectors();
+	while(eepromWriteInProgress())
+	{
+		// wait.
+	}
+	uint8_t status_reg = eepromReadStatusRegister();
+	if((status_reg & 0x00) == 0x00)
+	{
+		GLCD_SetCursorAddress(0);
+		GLCD_WriteText("EEPROM Write Protection Disabled.");
+		GLCD_SetCursorAddress(40);
+		GLCD_WriteText("Erasing EEPROM Contents...");
+		GLCD_SetCursorAddress(80);
+
+		eepromChipErase();
+		if(isEEPROMErased() != CH_OK)
+		{
+			GLCD_WriteText("Unable to erase EEPROM contents.");
+		}
+		else
+		{
+			GLCD_WriteText("EEPROM Erased.");
+			if(copyCKTFileToEEPROM() == CH_OK)
+			{
+				GLCD_SetCursorAddress(120);
+				GLCD_WriteText("CKT file copied.");
+				if(verifyCKTFile() == CH_OK)
+				{
+					GLCD_SetCursorAddress(160);
+					GLCD_WriteText("CKT file verified.");
+
+					if(copyLOCFileToEEPROM() == CH_OK)
+					{
+						GLCD_SetCursorAddress(200);
+						GLCD_WriteText("LOC file copied.");
+						if(verifyLOCFile() == CH_OK)
+						{
+							GLCD_SetCursorAddress(240);
+							GLCD_WriteText("LOC file verified.");
+						}
+					}
+				}
+			}
+		}
+
+	}
+	eepromWriteProtectAllSectors();
+	status_reg = eepromReadStatusRegister();
+	_delay_ms(3000); // this delay is essential because the input switches stay high for some time.
+	if(status_reg && 0x0C)
+	{
+		GLCD_SetCursorAddress(280);
+		GLCD_WriteText("EEPROM Write Protection Enabled.");
+		GLCD_SetCursorAddress(320);
+		GLCD_WriteText("Checker configuration completed.");
+	}
+	_delay_ms(3000);
+}
+void selfLearn(void)
+{
+	uint8_t board_count, boardSeq;
+	displayMessage("PROG. MODE");
+	initalizeDriverCPLDs(&board_count,&boardSeq);
+	if(programHarness(board_count,boardSeq) == CH_OK)
+	{
+		displayMessage("LEARNED");
+	}
+	else
+	{
+		displayMessage("FAIL");
+	}
+	_delay_ms(3000);
+}
+void selfDiagnostic(void)
+{
+
+}
+void about(void)
+{
+	GLCD_ClearGraphic();
+	GLCD_ClearText();
+
+	char ckt_header[CKT_HEADER_LENGTH];
+	char loc_header[LOC_HEADER_LENGTH];
+	eepromRead(ckt_header,CKT_HEADER_ADDR,CKT_HEADER_LENGTH);
+	eepromRead(loc_header,LOC_HEADER_ADDR,LOC_HEADER_LENGTH);
+
+	uint8_t ckt_ok = 0, loc_ok = 0;
+
+	GLCD_SetCursorAddress(0);
+	if(ckt_header[0] == 'C' && ckt_header[1] == 'K' && ckt_header[2] == 'T')
+	{
+		ckt_ok = 1;
+		GLCD_WriteText("HELLO");
 	}
 
-	initSPI();
-	uint8_t board_count;
-	uint8_t boardSeq;
-	initalizeDriverCPLDs(&board_count,&boardSeq);
-	uint8_t storedBoardSeq = returnStoredBoardSequence();
-	if(checkBoardSequence(boardSeq)==CH_OK)
+	if(loc_header[0] == 'L' && loc_header[1] == 'O' && loc_header[2] == 'C')
 	{
-		if(boardSeq == storedBoardSeq)
+		loc_ok = 1;
+		GLCD_WriteText("BYE");
+	}
+
+	drawText("CHECKER INFO", 13, 320/2 - textWidthOfString("CHECKER INFO",20)/2, 20, 20);
+
+	uint16_t line_address = 280;
+	const uint8_t newline = 40;
+
+	GLCD_SetCursorAddress(line_address+5);
+
+	if(loc_ok & ckt_ok)
+	{
+		GLCD_WriteText("Harness: ");
+		GLCD_WriteText("Suzuki Y88 EURO");
+		line_address+=newline;
+
+		GLCD_SetCursorAddress(line_address + 5);
+		GLCD_WriteText("Wire Count: ");
+		GLCD_WriteText("248");
+		line_address+=(newline*2);
+
+		GLCD_SetCursorAddress(line_address + 5);
+		GLCD_WriteText("Checker Activation Date: ");
+		GLCD_WriteText("31/10/12");
+
+		line_address+=newline;
+		GLCD_SetCursorAddress(line_address + 5);
+		GLCD_WriteText("Serial Number: ");
+		GLCD_WriteText("0623414");
+
+		line_address+=(newline*2);
+	}
+	else
+	{
+		GLCD_WriteText("Checker Config. Data Not Found.");
+		line_address+=(newline*6);
+	}
+
+	uint8_t inited_boards = detectedCPLDs();
+
+	GLCD_SetCursorAddress(line_address + 5);
+	GLCD_WriteText("Daughter Boards:");
+	char intstr[3];
+
+	for(int i=1;i<MAX_DAUGHTER_BOARDS;i++)
+	{
+		line_address+=(newline);
+		GLCD_SetCursorAddress(line_address + 5);
+		GLCD_WriteText("Daughter Board ");
+		itoa(i,intstr,10);
+		GLCD_WriteText(intstr);
+		if(inited_boards & (1 << i))
 		{
-			GLCD_SetCursorAddress(0);
-			GLCD_WriteText("ALL OK");
-			*sys_board_count = board_count;
+			GLCD_WriteText(": Active.");
+		}
+		else
+		{
+			GLCD_WriteText(": Not Detected.");
 		}
 	}
+
+
+	line_address+=(newline*4);
+	GLCD_SetCursorAddress(line_address + 5);
+	GLCD_WriteText("Press OK to return to menu.");
+
+	_delay_ms(5000);
+	while((PINA & (1 << PA3)) == 0);
+	_delay_ms(3000);
+
 }
+void eraseChecker(void)
+{
+	GLCD_ClearGraphic();
+	GLCD_ClearText();
+	GLCD_SetCursorAddress(85);
+
+	GLCD_WriteText("This will erase the contents of the internal EEPROM.");
+	GLCD_SetCursorAddress(85+40);
+	GLCD_WriteText("Are you sure you want to continue?");
+
+	_delay_ms(5000);
+	while((PINA & (1 << PA3)) == 0);
+	_delay_ms(3000);
+
+}
+
+void copyEEPROMToSDCard(void)
+{
+	GLCD_ClearText();
+	GLCD_ClearGraphic();
+	GLCD_SetCursorAddress(0);
+	copyEEPROMToFile();
+	GLCD_WriteText("DONE");
+	_delay_ms(3000);
+}
+
+void LEDSequence(void)
+{
+	char str[3];
+
+	GLCD_ClearGraphic();
+	GLCD_ClearText();
+	GLCD_SetCursorAddress(0);
+	GLCD_WriteText("Outputting LED Sequence...");
+	uint8_t driver = 0;
+	uint8_t wire;
+	setFirstBitOnDriver(driver);
+	GLCD_SetCursorAddress(40);
+	GLCD_WriteText("LED: ");
+	for(wire=0;wire<72;wire++)
+	{
+		itoa(wire+1,str,10);
+		GLCD_WriteText(str);
+		GLCD_SetCursorAddress(44);
+		_delay_ms(1000);
+		shiftVectorOnDriver(driver);
+	}
+	GLCD_SetCursorAddress(80);
+	GLCD_WriteText("Test Complete.");
+}
+

@@ -31,6 +31,17 @@ void displayFaults(WireInfo faulty_wire[], char fault_type[], uint16_t no_of_fau
 	drawText(faulty_wire[0].locationB,lenB,(SED1335_SCR_WIDTH+1)*3/4 - (lenB*24/2),25,48);
 	drawText(fault_type,strlen(fault_type),(SED1335_SCR_WIDTH+1)/2 - strlen(fault_type)*16/2,98,20);
 
+	for(int i=0;i<SED1335_SCR_WIDTH/2-(8*17/2);i++)
+	{
+		GLCD_SetPixel(i,140,0xFF);
+	}
+	for(int i=SED1335_SCR_WIDTH/2 + (8*17/2) + 5;i<SED1335_SCR_WIDTH;i++)
+	{
+		GLCD_SetPixel(i,140,0xFF);
+	}
+	GLCD_SetCursorAddress(40*17+40/2 - 17/2);
+	GLCD_WriteText("Additional Faults");
+
 	uint8_t h_offset = 0;
 	uint8_t w_offset = 0;
 	const uint8_t line_height = 30;
@@ -57,17 +68,17 @@ void displayFaults(WireInfo faulty_wire[], char fault_type[], uint16_t no_of_fau
 	strncat(colour_width,faulty_wire[0].gauge,GAUGE_WIDTH);
 
 	drawText(colour_width,strlen(colour_width),(SED1335_SCR_WIDTH+1)/2 - strlen(colour_width)*16/2,75,20);
-
-	for(int i=0;i<SED1335_SCR_WIDTH/2-(8*17/2);i++)
-	{
-		GLCD_SetPixel(i,140,0xFF);
-	}
-	for(int i=SED1335_SCR_WIDTH/2 + (8*17/2) + 5;i<SED1335_SCR_WIDTH;i++)
-	{
-		GLCD_SetPixel(i,140,0xFF);
-	}
-	GLCD_SetCursorAddress(40*17+40/2 - 17/2);
-	GLCD_WriteText("Additional Faults");
+//
+//	for(int i=0;i<SED1335_SCR_WIDTH/2-(8*17/2);i++)
+//	{
+//		GLCD_SetPixel(i,140,0xFF);
+//	}
+//	for(int i=SED1335_SCR_WIDTH/2 + (8*17/2) + 5;i<SED1335_SCR_WIDTH;i++)
+//	{
+//		GLCD_SetPixel(i,140,0xFF);
+//	}
+//	GLCD_SetCursorAddress(40*17+40/2 - 17/2);
+//	GLCD_WriteText("Additional Faults");
 }
 
 uint8_t textWidthOfString(char str[], char FONT_SIZE)

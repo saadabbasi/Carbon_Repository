@@ -29,7 +29,7 @@
 #define SOCKINS		(!(PINB & 0x10))	/* Card detected.   yes:true, no:false, default:true */
 
 #define	FCLK_SLOW()	SPCR = 0x52		/* Set slow clock (100k-400k) */
-#define	FCLK_FAST()	SPCR = 0x50		/* Set fast clock (depends on the CSD) */
+#define	FCLK_FAST()	SPCR = 0x51		/* Set fast clock (depends on the CSD) */
 
 
 /* Definitions for MMC/SDC command */
@@ -166,7 +166,7 @@ void power_on (void)
 	DDRB  = 0b10000111;
 
 	SPCR = 0x52;			/* Enable SPI function in mode 0 */
-	SPSR = 0x00;			/* SPI 2x mode */
+	SPSR = 0x01;			/* SPI 2x mode */
 	// The SPSR bit was set o 0x01 in the original file. I adjusted it to 0x00 to reduce speed to 2MHz.
 }
 

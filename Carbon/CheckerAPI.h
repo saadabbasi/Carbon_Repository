@@ -41,7 +41,8 @@ typedef enum
 	CH_INVALID_FIL,
 	CH_INVALID_HEADER_CKT,
 	CH_INVALID_HEADER_LOC,
-	CH_VERIFICATION_FAILED
+	CH_VERIFICATION_FAILED,
+	CH_NOT_ERASED
 } CH_RESULT;
 
 typedef struct
@@ -52,13 +53,15 @@ typedef struct
 	char locationB[LOCATION_WIDTH];
 } WireInfo;
 
+uint8_t detectedCPLDs(void);
+CH_RESULT isEEPROMErased(void);
 uint8_t returnStoredBoardSequence(void);
 void copyEEPROMToFile(void);
 void readWireParametersFromIndices(int16_t wire_positions[], WireInfo wireInfo[]);
 void readWireParameters(uint16_t wire_num, WireInfo *wireInfo);
 CH_RESULT checkBoardSequence(uint8_t connectedBoards);
 CH_RESULT findFaultsAndReturnFaultyWireInfos(uint8_t board_count, WireInfo faulty_wires[], uint16_t *count);
-CH_RESULT getCKTInfo(uint16_t ckt, uint16_t vector_size, char cktInfo[]);
+CH_RESULT getCKTInfo(uint16_t ckt, uint16_t vector_size, uint8_t cktInfo[]);
 CH_RESULT readCKTHeader(FIL *file);
 CH_RESULT copyCKTFileToEEPROM(void);
 CH_RESULT copyLOCFileToEEPROM(void);
