@@ -160,6 +160,7 @@ enum state {ST_STARTUP, ST_IDLE, ST_CHECK, ST_STARTUP_FAULT, ST_PROGRAM, ST_COPY
 
 int main(void)
 {
+	// GitHub Rocks!
 	FATFS FileSystemObject;
 	enum state current_state = ST_STARTUP;
 	uint8_t check;
