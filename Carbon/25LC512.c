@@ -62,7 +62,7 @@ uint8_t eepromWritePage(uint8_t page[], uint16_t address)
 
 void eepromRead(char buffer[], uint16_t address, uint8_t bytes_to_read)
 {
-	char str[10];
+	char str[12];
 	for(int i = 0;i<10;i++)
 	{
 		str[i] = 0x00;

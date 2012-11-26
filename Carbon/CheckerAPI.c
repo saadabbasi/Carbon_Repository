@@ -8,6 +8,59 @@
 
 #include "CheckerAPI.h"
 
+CH_KEY	readKeys(void)
+{
+	bool enter, up, down, cancel;
+	up = (PINA & (1 << PA3));
+	down = (PINA & (1 << PA2));
+
+	if(up)
+	{
+		_delay_ms(50);
+		up = (PINA & (1 << PA3));
+		if(up)
+		{
+			return CH_UP;
+		}
+	}
+
+	if(down)
+	{
+		_delay_ms(50);
+		down = (PINA & (1 << PA2));
+		if(down)
+		{
+			return CH_DOWN;
+		}
+	}
+
+	enter = (PINA & (1 << ENTER_KEY_PIN));
+	if(enter)
+	{
+		_delay_ms(50);
+		enter = (PINA & (1 << ENTER_KEY_PIN));
+		if(enter)
+		{
+			return CH_ENTER;
+		}
+
+	}
+
+	cancel = (PINA & (1 << CANCEL_KEY_PIN));
+	if(cancel)
+	{
+		_delay_ms(50);
+		cancel = (PINA & (1 << CANCEL_KEY_PIN));
+		if(cancel)
+		{
+			return CH_CANCEL;
+		}
+	}
+
+
+	return CH_NOKEY;
+}
+
 CH_RESULT isEEPROMErased(void)
 {
 	// This function checks to see if a eeproomChipErase() was successful.
@@ -64,7 +117,7 @@ CH_RESULT findFaultsAndReturnFaultyWireInfos(uint8_t board_count, WireInfo fault
 	int16_t fault_locations[TPOINTS];
 
 	uint8_t total_bytes = BYTES_PER_BOARD*board_count;
-	char str[10];
+
 	for(driver = 0; driver < board_count; driver++)
 	{
 		// Ensure all drivers' registers are 0 before driving a test vector onto one of them.
@@ -166,13 +219,13 @@ CH_RESULT checkBoardSequence(uint8_t connectedBoards)
 	return CH_OK;
 }
 
-CH_RESULT verifyCKTFile(void)
+CH_RESULT verifyCKTFile(const char * chk_file_path)
 {
 	uint8_t buffer[EEPROM_PAGESIZE] = {0xFF};
 	char epbuffer[EEPROM_PAGESIZE] = {0xFF};
 
 	FIL f_circuit_data;
-	if(f_open(&f_circuit_data,"/map.chk",FA_READ | FA_WRITE | FA_OPEN_EXISTING) != FR_OK)
+	if(f_open(&f_circuit_data,chk_file_path,FA_READ | FA_WRITE | FA_OPEN_EXISTING) != FR_OK)
 	{
 		return 1;
 	}
@@ -244,7 +297,7 @@ void copyEEPROMToFile(void)
 	f_close(&file);
 }
 
-CH_RESULT copyCKTFileToEEPROM(void)
+CH_RESULT copyCKTFileToEEPROM(const char * ckt_file_path)
 {
 	uint8_t page = 128;
 	uint8_t buffer[128] = {0xFF};
@@ -257,7 +310,7 @@ CH_RESULT copyCKTFileToEEPROM(void)
 		buffer[i] = 0xFF;
 	}
 
-	if(f_open(&file,"/map.chk",FA_READ | FA_WRITE | FA_OPEN_EXISTING) != FR_OK)
+	if(f_open(&file,ckt_file_path,FA_READ | FA_WRITE | FA_OPEN_EXISTING) != FR_OK)
 	{
 		//GLCD_SetCursorAddress(0);
 		//GLCD_WriteText("Cannot Open File.");
@@ -308,14 +361,14 @@ CH_RESULT copyCKTFileToEEPROM(void)
 }
 
 
-CH_RESULT copyLOCFileToEEPROM(void)
+CH_RESULT copyLOCFileToEEPROM(char const * loc_file_path)
 {
 	FIL f_loc;
 	uint8_t header[LOC_HEADER_LENGTH];
 	uint8_t buffer[EEPROM_PAGESIZE];
 	unsigned int bytesRead;
 
-	if(f_open(&f_loc,"/data.loc",FA_READ | FA_OPEN_EXISTING) != FR_OK)
+	if(f_open(&f_loc,loc_file_path,FA_READ | FA_OPEN_EXISTING) != FR_OK)
 	{
 		return (1);
 	}
@@ -353,14 +406,14 @@ CH_RESULT copyLOCFileToEEPROM(void)
 	return CH_OK;
 }
 
-CH_RESULT verifyLOCFile(void)
+CH_RESULT verifyLOCFile(const char * loc_file_path)
 {
 	FIL f_loc;
 	char epbuffer[EEPROM_PAGESIZE];
 	char sdbuffer[EEPROM_PAGESIZE];
 	unsigned int bytesRead;
 
-	if(f_open(&f_loc,"/data.loc",FA_READ | FA_OPEN_EXISTING) != FR_OK)
+	if(f_open(&f_loc,loc_file_path,FA_READ | FA_OPEN_EXISTING) != FR_OK)
 	{
 		return (1);
 	}

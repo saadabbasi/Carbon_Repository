@@ -10,6 +10,7 @@
 
 #include <avr/io.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include "CPLD_API.h"
 #include "uart.h"
 #include "xitoa.h"
@@ -30,6 +31,12 @@
 #define LOC_HEADER_LENGTH	25
 #define MAX_DAUGHTER_BOARDS	5
 
+#define UP					(PINA & (1 << PA3))
+#define	DOWN				(PINA & (1 << PA2))
+#define ENTER_KEY_PIN		PA0
+#define	DOWN				(PINA & (1 << PA2))
+#define CANCEL_KEY_PIN		PA1
+
 typedef enum
 {
 	CH_OK = 0,
@@ -44,6 +51,16 @@ typedef enum
 	CH_VERIFICATION_FAILED,
 	CH_NOT_ERASED
 } CH_RESULT;
+
+typedef enum
+{
+	CH_NOKEY = 0,
+	CH_CHECK,
+	CH_ENTER,
+	CH_CANCEL,
+	CH_UP,
+	CH_DOWN
+} CH_KEY;
 
 typedef struct
 {
@@ -63,12 +80,13 @@ CH_RESULT checkBoardSequence(uint8_t connectedBoards);
 CH_RESULT findFaultsAndReturnFaultyWireInfos(uint8_t board_count, WireInfo faulty_wires[], uint16_t *count);
 CH_RESULT getCKTInfo(uint16_t ckt, uint16_t vector_size, uint8_t cktInfo[]);
 CH_RESULT readCKTHeader(FIL *file);
-CH_RESULT copyCKTFileToEEPROM(void);
-CH_RESULT copyLOCFileToEEPROM(void);
-CH_RESULT verifyCKTFile(void);
-CH_RESULT verifyLOCFile(void);
+CH_RESULT copyCKTFileToEEPROM(const char * ckt_file_path);
+CH_RESULT copyLOCFileToEEPROM(const char * loc_file_path);
+CH_RESULT verifyCKTFile(const char * chk_file_path);
+CH_RESULT verifyLOCFile(const char * loc_file_path);
 CH_RESULT programHarness(uint8_t board_count, uint8_t connectedBoards);
 CH_RESULT initalizeDriverCPLDs(uint8_t *count, uint8_t *inited_boards);
+CH_KEY	readKeys(void);
 void recieveTestVectorFromConnectedBoards(uint8_t test_vector[], uint8_t board_count);
 
 #endif /* CHECKERAPI_H_ */

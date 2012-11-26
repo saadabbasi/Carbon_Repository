@@ -20,6 +20,8 @@
 #include "sed1335.h"
 #include "fonts.h"
 
+#define MAKECURSORINVISBLE	GLCD_SetCursorAddress(5000)
+
 void displayMessage(char message[]);
 void displayOKScreen(void);
 void displayFaults(WireInfo faulty_wire[], char fault_type[], uint16_t no_of_faults);
