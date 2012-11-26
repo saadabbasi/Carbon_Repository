@@ -10,3 +10,4 @@ extern const unsigned char proFontWindows20ptBitmaps[] PROGMEM;
 extern const unsigned char proFontWindows40ptBitmaps[] PROGMEM;
 extern const FONT_CHAR_INFO proFontWindows20ptDescriptors[];
 extern const FONT_CHAR_INFO proFontWindows40ptDescriptors[];
+extern const char proFontWindows40ptFontInfo[];
