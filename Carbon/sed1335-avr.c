@@ -130,28 +130,29 @@ void drawSmallText(char text[], int length, int x, int y)
 
 void drawLargeText(char text[], int length, int x, int y)
 {
-	int index = 0;
-	int width = 24;
-	int height = 32;
+	uint8_t index = 0;
+	uint8_t width = 24;
+	uint8_t height = 40;
 
-	for(int i=0;i<length;i++)
+	for(uint8_t i=0;i<length;i++)
 	{
 		if(text[i] == ' ')
 		{
-			index = 26;
+			width = 24;
 		}
-		else if(text[i] == '/')
+		else if(text[i] >= '!' && text[i]<=']')
 		{
-			index = 0;
-		}
-		else if(text[i] >= '0' && text[i]<='9')
-		{
-			index = (text[i] - '0') + 1;
+			//index = (text[i] - '0') + 1;
+			//GLCD_SetCursorAddress(0);
+
+			index = text[i] - proFontWindows40ptFontInfo[1];
+			//index = index + 1;
 		}
 
-		if(text[i] == '/' || (text[i] >= '0' && text[i]<='9'))
+		if(text[i] >= '!' && text[i]<=']')
 		{
-			FONT_CHAR_INFO largeType = proFontWindows40ptDescriptors[index];
+			FONT_CHAR_INFO largeType = proFontWindows36ptDescriptors[index];
+			width = largeType.widthBits;
 			drawAChar(x,y,width,height,largeType.offset,proFontWindows40ptBitmaps);
 		}
 		x = x + width;

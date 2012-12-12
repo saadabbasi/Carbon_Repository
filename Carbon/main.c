@@ -574,7 +574,16 @@ CH_RESULT checkHarness(uint8_t board_count)
 		}
 		else if(result == CH_MISSING_WIRE)
 		{
-			char fault_type[14] = "MISSING WIRE";
+			char *fault_type;
+			if(faulty_wires[0].colour[0] == '#')
+			{
+				fault_type = "MISSING CLIP";
+			}
+			else
+			{
+				fault_type = "MISSING WIRE";
+			}
+
 			displayFaults(faulty_wires,fault_type,fault_count);
 		}
 		else if(result == CH_SHORT_CIRCUIT)
@@ -905,7 +914,7 @@ void LEDSequence(void)
 	GLCD_ClearText();
 	GLCD_SetCursorAddress(0);
 	GLCD_WriteText("Outputting LED Sequence...");
-	uint8_t driver = 4;
+	uint8_t driver = 0;
 	uint8_t wire;
 	while(1)
 	{
@@ -917,7 +926,7 @@ void LEDSequence(void)
 			itoa(wire+1,str,10);
 			GLCD_WriteText(str);
 			GLCD_SetCursorAddress(44);
-			//_delay_ms(400);
+			_delay_ms(400);
 			shiftVectorOnDriver(driver);
 			if(readKeys() == CH_CANCEL)
 			{

@@ -6,6 +6,7 @@
  */
 
 #include "display.h"
+#include <math.h>
 
 void displayMessage(char message[])
 {
@@ -22,13 +23,35 @@ void displayOKScreen(void)
 
 void displayFaults(WireInfo faulty_wire[], char fault_type[], uint16_t no_of_faults)
 {
+	uint8_t font_size;
 	char colon[2] = ":";
 	char colour_width[COLOUR_WIDTH + GAUGE_WIDTH];
 	GLCD_ClearGraphic();
 	int lenA = strlen(faulty_wire[0].locationA);
 	int lenB = strlen(faulty_wire[0].locationB);
-	drawText(faulty_wire[0].locationA,lenA,(SED1335_SCR_WIDTH+1)/4 - (lenA*24/2),25,48);
-	drawText(faulty_wire[0].locationB,lenB,(SED1335_SCR_WIDTH+1)*3/4 - (lenB*24/2),25,48);
+
+	uint16_t text_width_A = textWidthOfString(faulty_wire[0].locationA,48);
+	uint16_t text_width_B = textWidthOfString(faulty_wire[0].locationB,48);
+
+	uint16_t text_A_start = abs(SED1335_SCR_WIDTH+1)/4 - (text_width_A/2);
+	uint16_t text_A_end = text_A_start + text_width_A;
+
+	uint16_t text_B_start = abs(SED1335_SCR_WIDTH+1)*3/4 - (text_width_B/2);
+
+	if((abs(text_B_start - text_A_end)) < 10)
+	{
+		font_size = 20;
+	}
+	else
+	{
+		font_size = 48;
+	}
+
+	text_width_A = textWidthOfString(faulty_wire[0].locationA,font_size);
+	text_width_B = textWidthOfString(faulty_wire[0].locationB,font_size);
+
+	drawText(faulty_wire[0].locationA,lenA,abs(SED1335_SCR_WIDTH+1)/4 - (text_width_A/2),25,font_size);
+	drawText(faulty_wire[0].locationB,lenB,abs(SED1335_SCR_WIDTH+1)*3/4 - (text_width_B/2),25,font_size);
 	drawText(fault_type,strlen(fault_type),(SED1335_SCR_WIDTH+1)/2 - strlen(fault_type)*16/2,98,20);
 
 	for(int i=0;i<SED1335_SCR_WIDTH/2-(8*17/2);i++)
@@ -68,17 +91,17 @@ void displayFaults(WireInfo faulty_wire[], char fault_type[], uint16_t no_of_fau
 	strncat(colour_width,faulty_wire[0].gauge,GAUGE_WIDTH);
 
 	drawText(colour_width,strlen(colour_width),(SED1335_SCR_WIDTH+1)/2 - strlen(colour_width)*16/2,75,20);
-//
-//	for(int i=0;i<SED1335_SCR_WIDTH/2-(8*17/2);i++)
-//	{
-//		GLCD_SetPixel(i,140,0xFF);
-//	}
-//	for(int i=SED1335_SCR_WIDTH/2 + (8*17/2) + 5;i<SED1335_SCR_WIDTH;i++)
-//	{
-//		GLCD_SetPixel(i,140,0xFF);
-//	}
-//	GLCD_SetCursorAddress(40*17+40/2 - 17/2);
-//	GLCD_WriteText("Additional Faults");
+	//
+	//	for(int i=0;i<SED1335_SCR_WIDTH/2-(8*17/2);i++)
+	//	{
+	//		GLCD_SetPixel(i,140,0xFF);
+	//	}
+	//	for(int i=SED1335_SCR_WIDTH/2 + (8*17/2) + 5;i<SED1335_SCR_WIDTH;i++)
+	//	{
+	//		GLCD_SetPixel(i,140,0xFF);
+	//	}
+	//	GLCD_SetCursorAddress(40*17+40/2 - 17/2);
+	//	GLCD_WriteText("Additional Faults");
 }
 
 uint8_t textWidthOfString(char str[], char FONT_SIZE)
