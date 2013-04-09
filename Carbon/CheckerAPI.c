@@ -8,6 +8,19 @@
 
 #include "CheckerAPI.h"
 
+CH_KEY	keySwitchState(void)
+{
+	uint8_t config_jumper = (PINB & (1 << PB6));
+	if(config_jumper == 0)
+	{
+		return CH_KEYSWITCHCLOSED;
+	}
+	else
+	{
+		return CH_KEYSWITCHOPEN;
+	}
+}
+
 CH_KEY	readKeys(void)
 {
 	bool enter, up, down, cancel;
@@ -41,6 +54,7 @@ CH_KEY	readKeys(void)
 		enter = (PINA & (1 << ENTER_KEY_PIN));
 		if(enter)
 		{
+			while((PINA & (1 << ENTER_KEY_PIN)) != 0);
 			return CH_ENTER;
 		}
 
@@ -135,14 +149,7 @@ CH_RESULT findFaultsAndReturnFaultyWireInfos(uint8_t board_count, WireInfo fault
 		for(wire=0;wire<72;wire++)
 		{
 			recieveTestVectorFromConnectedBoards(test_vector, board_count);
-			//			GLCD_SetCursorAddress(0);
-			//			for(int k=0;k<45;k++)
-			//			{
-			//				itoa(test_vector[k],str,2);
-			//				GLCD_WriteText(str);
-			//				GLCD_WriteText("-");
-			//			}
-			//			_delay_ms(100);
+			
 			getCKTInfo(wire+driver*TPOINTS_PER_BOARD,total_bytes,cktInfo); // retreive stored test vector.
 			uint16_t fault_count = detectFaultsAndReturnCount(cktInfo,test_vector,faults,total_bytes);
 			uint16_t open_circuit_count = detectOpenCircuitsAndReturnCount(cktInfo,test_vector,opens,total_bytes);
@@ -181,8 +188,6 @@ CH_RESULT findFaultsAndReturnFaultyWireInfos(uint8_t board_count, WireInfo fault
 
 			if(shiftVectorOnDriver(driver)==CPLD_BOARD_ID_ERR)
 			{
-				//GLCD_SetCursorAddress(160);
-				//GLCD_WriteText("CPLD_BOARD_ID_ERROR DURING SHIFTING VECTOR.");
 				break;
 			}
 		}
@@ -197,14 +202,6 @@ CH_RESULT getCKTInfo(uint16_t ckt, uint16_t vector_size, uint8_t cktInfo[])
 	uint16_t address = ckt*vector_size;
 
 	eepromRead((char*)cktInfo,address,vector_size);
-
-	//GLCD_SetCursorAddress(400);
-	//	for(int i=0;i<vector_size;i++)
-	//	{
-	//		itoa(cktInfo[i],str,16);
-	//		GLCD_WriteText(str);
-	//		GLCD_WriteText(" ");
-	//	}
 
 	return CH_OK;
 }
@@ -312,8 +309,6 @@ CH_RESULT copyCKTFileToEEPROM(const char * ckt_file_path)
 
 	if(f_open(&file,ckt_file_path,FA_READ | FA_WRITE | FA_OPEN_EXISTING) != FR_OK)
 	{
-		//GLCD_SetCursorAddress(0);
-		//GLCD_WriteText("Cannot Open File.");
 		return 1;
 	}
 
@@ -347,13 +342,11 @@ CH_RESULT copyCKTFileToEEPROM(const char * ckt_file_path)
 	{
 		if(f_read(&file,buffer,page,&bytesRead)!=FR_OK)
 		{
-			//GLCD_SetCursorAddress(0);
-			//GLCD_WriteText("Cannot Read File");
 			return 2;
 		}
 		eepromWritePage(buffer,address);
 		address = address + page;
-		//bytesCopied = bytesCopied + bytesRead;
+
 	}while(bytesRead == 128);
 
 	f_close(&file);
