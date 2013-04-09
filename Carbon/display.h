@@ -24,7 +24,7 @@
 
 void displayMessage(char message[]);
 void displayOKScreen(void);
-void displayFaults(WireInfo faulty_wire[], char fault_type[], uint16_t no_of_faults);
-uint8_t textWidthOfString(char str[], char FONT_SIZE);
+void displayFaults(WireInfo faulty_wire[], const char *fault_type, uint16_t no_of_faults);
+uint16_t textWidthOfString(char str[], char FONT_SIZE);
 
 #endif /* DISPLAY_H_ */

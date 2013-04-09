@@ -7,6 +7,7 @@
 
 #include "display.h"
 #include <math.h>
+#include "LockIcon.h"
 
 void displayMessage(char message[])
 {
@@ -21,37 +22,47 @@ void displayOKScreen(void)
 	displayMessage("HARNESS OK");
 }
 
-void displayFaults(WireInfo faulty_wire[], char fault_type[], uint16_t no_of_faults)
+void displayFaults(WireInfo faulty_wire[], const char* fault_type, uint16_t no_of_faults)
 {
+	char locations[20] = {'\0'};
 	uint8_t font_size;
 	char colon[2] = ":";
 	char colour_width[COLOUR_WIDTH + GAUGE_WIDTH];
 	GLCD_ClearGraphic();
+
 	int lenA = strlen(faulty_wire[0].locationA);
 	int lenB = strlen(faulty_wire[0].locationB);
+	uint8_t totalLength = lenA + lenB;
 
-	uint16_t text_width_A = textWidthOfString(faulty_wire[0].locationA,48);
-	uint16_t text_width_B = textWidthOfString(faulty_wire[0].locationB,48);
-
-	uint16_t text_A_start = abs(SED1335_SCR_WIDTH+1)/4 - (text_width_A/2);
-	uint16_t text_A_end = text_A_start + text_width_A;
-
-	uint16_t text_B_start = abs(SED1335_SCR_WIDTH+1)*3/4 - (text_width_B/2);
-
-	if((abs(text_B_start - text_A_end)) < 10)
+	char str[5] = {'\0'};
+	font_size = 48;
+	if(totalLength < 7)
 	{
-		font_size = 20;
+		strcpy(str,"    ");
+	}
+	else if(totalLength >= 7 && totalLength < 11)
+	{
+		strcpy(str,"  ");
+	}
+	else if(totalLength >= 11 && totalLength < 13)
+	{
+		strcpy(str," ");
 	}
 	else
 	{
-		font_size = 48;
+		strcpy(str,"   ");
+		font_size = 20;
 	}
 
-	text_width_A = textWidthOfString(faulty_wire[0].locationA,font_size);
-	text_width_B = textWidthOfString(faulty_wire[0].locationB,font_size);
+	strcpy(locations, faulty_wire[0].locationA);
+	strcat(locations, str);
+	strcat(locations, faulty_wire[0].locationB);
 
-	drawText(faulty_wire[0].locationA,lenA,abs(SED1335_SCR_WIDTH+1)/4 - (text_width_A/2),25,font_size);
-	drawText(faulty_wire[0].locationB,lenB,abs(SED1335_SCR_WIDTH+1)*3/4 - (text_width_B/2),25,font_size);
+	int lengthOfLocations = strlen(locations);
+	uint16_t textWidth = textWidthOfString(locations,font_size) - 4 - 1;
+	uint16_t textStart = ((SED1335_SCR_WIDTH )-textWidth)/2;
+	drawText(locations,lengthOfLocations,textStart,25,font_size);
+
 	drawText(fault_type,strlen(fault_type),(SED1335_SCR_WIDTH+1)/2 - strlen(fault_type)*16/2,98,20);
 
 	for(int i=0;i<SED1335_SCR_WIDTH/2-(8*17/2);i++)
@@ -86,25 +97,17 @@ void displayFaults(WireInfo faulty_wire[], char fault_type[], uint16_t no_of_fau
 		h_offset = k/2;
 	}
 
-	strncpy(colour_width,faulty_wire[0].colour,COLOUR_WIDTH);
-	strncat(colour_width," ",1);
-	strncat(colour_width,faulty_wire[0].gauge,GAUGE_WIDTH);
+	if(faulty_wire[0].colour[0] != '#')
+	{
+		strncpy(colour_width,faulty_wire[0].colour,COLOUR_WIDTH);
+		strncat(colour_width," ",1);
+		strncat(colour_width,faulty_wire[0].gauge,GAUGE_WIDTH);
 
-	drawText(colour_width,strlen(colour_width),(SED1335_SCR_WIDTH+1)/2 - strlen(colour_width)*16/2,75,20);
-	//
-	//	for(int i=0;i<SED1335_SCR_WIDTH/2-(8*17/2);i++)
-	//	{
-	//		GLCD_SetPixel(i,140,0xFF);
-	//	}
-	//	for(int i=SED1335_SCR_WIDTH/2 + (8*17/2) + 5;i<SED1335_SCR_WIDTH;i++)
-	//	{
-	//		GLCD_SetPixel(i,140,0xFF);
-	//	}
-	//	GLCD_SetCursorAddress(40*17+40/2 - 17/2);
-	//	GLCD_WriteText("Additional Faults");
+		drawText(colour_width,strlen(colour_width),(SED1335_SCR_WIDTH+1)/2 - strlen(colour_width)*16/2,75,20);
+	}
 }
 
-uint8_t textWidthOfString(char str[], char FONT_SIZE)
+uint16_t textWidthOfString(char str[], char FONT_SIZE)
 {
 	if(FONT_SIZE == 20)
 	{
