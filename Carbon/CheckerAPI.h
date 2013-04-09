@@ -59,7 +59,9 @@ typedef enum
 	CH_ENTER,
 	CH_CANCEL,
 	CH_UP,
-	CH_DOWN
+	CH_DOWN,
+	CH_KEYSWITCHCLOSED,
+	CH_KEYSWITCHOPEN
 } CH_KEY;
 
 typedef struct
@@ -87,6 +89,7 @@ CH_RESULT verifyLOCFile(const char * loc_file_path);
 CH_RESULT programHarness(uint8_t board_count, uint8_t connectedBoards);
 CH_RESULT initalizeDriverCPLDs(uint8_t *count, uint8_t *inited_boards);
 CH_KEY	readKeys(void);
+CH_KEY	keySwitchState(void);
 void recieveTestVectorFromConnectedBoards(uint8_t test_vector[], uint8_t board_count);
 
 #endif /* CHECKERAPI_H_ */
