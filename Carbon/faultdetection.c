@@ -67,7 +67,7 @@ uint16_t returnFaultyWirePositions(uint8_t seqToCheck[], int16_t bit_positions[]
 	uint16_t fault_count = 0;
 	uint16_t total_test_points = TBYTES * 8;
 
-	for(i=0;i<TBYTES;i++)
+	for(i=0;i<TPOINTS;i++)
 	{
 		bit_positions[i] = -1;
 	}
@@ -85,7 +85,32 @@ uint16_t returnFaultyWirePositions(uint8_t seqToCheck[], int16_t bit_positions[]
 		}
 	}
 
+	bubbleSort(bit_positions);
+
 	return fault_count;
+}
+
+void bubbleSort(int16_t arrayToSort[])
+{
+	int i, j, temp;
+
+	for(i=TPOINTS; i > 0; i--)
+	{
+		for(j = 1; j <= i; j++)
+		{
+			if(arrayToSort[j-1] > arrayToSort[j])
+			{
+				if(arrayToSort[j] != -1)
+				{
+					temp = arrayToSort[j-1];
+					arrayToSort[j-1] = arrayToSort[j];
+					arrayToSort[j] = temp;
+				}
+
+			}
+		}
+	}
+
 }
 
 uint8_t returnPositionOfOne(uint8_t byteToCheck)
