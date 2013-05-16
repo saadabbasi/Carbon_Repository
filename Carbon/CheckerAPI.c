@@ -8,6 +8,15 @@
 
 #include "CheckerAPI.h"
 
+void waitTillCancelOrSwitchOpens(void)
+{
+	while((readKeys() != CH_CANCEL))
+	{
+		if(readKeys() == CH_KEYSWITCHOPEN)
+			break;
+	}
+}
+
 CH_KEY	keySwitchState(void)
 {
 	uint8_t config_jumper = (PINB & (1 << PB6));
@@ -23,9 +32,10 @@ CH_KEY	keySwitchState(void)
 
 CH_KEY	readKeys(void)
 {
-	bool enter, up, down, cancel;
+	bool enter, up, down, cancel, show_menu_key;
 	up = (PINA & (1 << PA3));
 	down = (PINA & (1 << PA2));
+	show_menu_key = (PINB & (1 << PB6));
 
 	if(up)
 	{
@@ -69,6 +79,15 @@ CH_KEY	readKeys(void)
 		{
 			return CH_CANCEL;
 		}
+	}
+
+	if(!show_menu_key)
+	{
+		return CH_KEYSWITCHCLOSED;
+	}
+	else
+	{
+		return CH_KEYSWITCHOPEN;
 	}
 
 
@@ -149,7 +168,7 @@ CH_RESULT findFaultsAndReturnFaultyWireInfos(uint8_t board_count, WireInfo fault
 		for(wire=0;wire<72;wire++)
 		{
 			recieveTestVectorFromConnectedBoards(test_vector, board_count);
-			
+
 			getCKTInfo(wire+driver*TPOINTS_PER_BOARD,total_bytes,cktInfo); // retreive stored test vector.
 			uint16_t fault_count = detectFaultsAndReturnCount(cktInfo,test_vector,faults,total_bytes);
 			uint16_t open_circuit_count = detectOpenCircuitsAndReturnCount(cktInfo,test_vector,opens,total_bytes);

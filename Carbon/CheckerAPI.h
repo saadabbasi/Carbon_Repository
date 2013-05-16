@@ -91,5 +91,6 @@ CH_RESULT initalizeDriverCPLDs(uint8_t *count, uint8_t *inited_boards);
 CH_KEY	readKeys(void);
 CH_KEY	keySwitchState(void);
 void recieveTestVectorFromConnectedBoards(uint8_t test_vector[], uint8_t board_count);
+void waitTillCancelOrSwitchOpens(void);
 
 #endif /* CHECKERAPI_H_ */
