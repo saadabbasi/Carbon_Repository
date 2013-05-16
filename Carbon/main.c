@@ -134,7 +134,7 @@ const uint8_t *MENU[] = {
 		MN500,
 		MN600,
 		MN700,
-		MN800
+		MN800,
 };
 
 const uint8_t menu_count = 7;
@@ -166,7 +166,7 @@ struct Menu_State{
 	uint8_t subMenuNo;//1,2,3
 }MN;
 
-enum state {ST_STARTUP, ST_IDLE, ST_CHECK, ST_STARTUP_FAULT, ST_PROGRAM, ST_COPYTOEEPROM, ST_SHOWMENU, ST_WAIT_MENU_INPUT, ST_TEST};
+enum state {ST_STARTUP, ST_IDLE, ST_CHECK, ST_STARTUP_FAULT, ST_PROGRAM, ST_COPYTOEEPROM, ST_SHOWMENU, ST_WAIT_MENU_INPUT, ST_TEST, ST_READY};
 
 int main(void)
 {
@@ -175,7 +175,7 @@ int main(void)
 	enum state current_state = ST_STARTUP;
 	uint8_t check;
 	uint8_t board_count, sys_board_sequence;
-	uint8_t hardware_fault = 0;
+	uint8_t hardware_fault = 0, system_lock = 0;
 	//	CH_RESULT checkResult = CH_OK;
 	CH_RESULT startupResult; CH_KEY keyPressed = 0;
 	DDRG |= (0 << PG1);
@@ -213,15 +213,25 @@ int main(void)
 			GLCD_SetCursorAddress(80 + 5);
 			GLCD_WriteText(intstr);
 
-			if(startupResult == CH_INVALID_BOARD_SEQUENCE)
+			keyPressed = readKeys();
+
+
+			if(keyPressed == CH_CANCEL)
+			{
+				current_state = ST_SHOWMENU;
+			}
+			else if(startupResult == CH_INVALID_BOARD_SEQUENCE)
 			{
 				current_state = ST_STARTUP_FAULT;
 			}
 			else if(startupResult == CH_OK)
 			{
-				displayMessage("CHECKER READY.");
-				current_state = ST_IDLE;
+				current_state = ST_READY;
 			}
+			break;
+		case ST_READY:
+			displayMessage("CHECKER READY.");
+			current_state = ST_IDLE;
 			break;
 		case ST_STARTUP_FAULT:
 			displayMessage("HARDWARE FAULT.");
@@ -230,6 +240,7 @@ int main(void)
 			break;
 		case ST_IDLE:
 			config_jumper = (PINB & (1 << PB6));
+
 			if(config_jumper == 0)
 			{
 				current_state = ST_SHOWMENU;
@@ -341,8 +352,8 @@ int main(void)
 				GLCD_WriteText((char*)MENU[i]);
 			}
 
-			GLCD_SetCursorAddress(45+MN.menuNo*40);
-			GLCD_WriteText("*");
+			GLCD_SetCursorAddress(47+MN.menuNo*40);
+			GLCD_WriteText(">>");
 			current_state = ST_WAIT_MENU_INPUT;
 			GLCD_SetCursorAddress(5000);
 			//MAKECURSORINVISBLE;
@@ -383,12 +394,9 @@ int main(void)
 				current_state = ST_SHOWMENU;
 			}
 
-			config_jumper = (PINB & (1 << PB6));
-			if(config_jumper != 0)
+			if(keyPressed == CH_KEYSWITCHOPEN)
 			{
-				GLCD_ClearGraphic();
-				GLCD_ClearText();
-				current_state = ST_IDLE;
+				current_state = ST_STARTUP;
 			}
 
 			break;
@@ -462,70 +470,70 @@ void hardwareTest(void)
 
 
 
-	// Test EEPROM
+	//Test EEPROM
 
-	//	GLCD_ClearText(); GLCD_ClearGraphic();
-	//	GLCD_SetCursorAddress(0);
-	//	GLCD_WriteText("Testing EEPROM...");
-	//	uint8_t buffer[EEPROM_PAGESIZE]; uint16_t address = 0;
-	//	char read_buffer[EEPROM_PAGESIZE];
-	//	for(int i = 0; i < EEPROM_PAGESIZE; i++)
-	//	{
-	//		buffer[i] = 0xAA;
-	//	}
-	//	eepromRemoveProtectionFromAllSectors();
-	//	while(eepromWriteInProgress())
-	//	{
-	//		// wait.
-	//	}
-	//	uint8_t status_reg = eepromReadStatusRegister();
-	//
-	//	if((status_reg & 0x00) == 0x00)
-	//	{
-	//		GLCD_SetCursorAddress(40);
-	//		GLCD_WriteText("EEPROM Write Protection Disabled.");
-	//	}
-	//	else
-	//	{
-	//		return; //fail.
-	//	}
-	//
-	//	for(int i=0;i<(EEPROM_SIZE/EEPROM_PAGESIZE);i++)
-	//	{
-	//		eepromWritePage(buffer,address);
-	//		address = address + EEPROM_PAGESIZE;
-	//		while(eepromWriteInProgress())
-	//		{
-	//			// wait.
-	//		}
-	//	}
-	//
-	//	//-- writing complete
-	//
-	//	uint8_t test_passed = 1; address = 0;
-	//	for(int i = 0; i<(EEPROM_SIZE/EEPROM_PAGESIZE);i++)
-	//	{
-	//		eepromRead(read_buffer,address,EEPROM_PAGESIZE);
-	//		for(int j=0;j<EEPROM_PAGESIZE;j++)
-	//		{
-	//			if(read_buffer[j] != 0xAA)
-	//			{
-	//				test_passed = 0;
-	//				break;
-	//			}
-	//		}
-	//		address = address + EEPROM_PAGESIZE;
-	//	}
-	//
-	//	if(test_passed)
-	//	{
-	//		GLCD_SetCursorAddress(80);
-	//		GLCD_WriteText("EEPROM TEST PASS.");
-	//	}
-	//
-	//	GLCD_SetCursorAddress(120);
-	//	GLCD_WriteText("Finished");
-	//	_delay_ms(100000);
+	GLCD_ClearText(); GLCD_ClearGraphic();
+	GLCD_SetCursorAddress(0);
+	GLCD_WriteText("Testing EEPROM...");
+	uint8_t buffer[EEPROM_PAGESIZE]; uint16_t address = 0;
+	char eep_read_buffer[EEPROM_PAGESIZE];
+	for(int i = 0; i < EEPROM_PAGESIZE; i++)
+	{
+		buffer[i] = 0xAA;
+	}
+	eepromRemoveProtectionFromAllSectors();
+	while(eepromWriteInProgress())
+	{
+		// wait.
+	}
+	uint8_t status_reg = eepromReadStatusRegister();
+
+	if((status_reg & 0x00) == 0x00)
+	{
+		GLCD_SetCursorAddress(40);
+		GLCD_WriteText("EEPROM Write Protection Disabled.");
+	}
+	else
+	{
+		return; //fail.
+	}
+
+	for(int i=0;i<(EEPROM_SIZE/EEPROM_PAGESIZE);i++)
+	{
+		eepromWritePage(buffer,address);
+		address = address + EEPROM_PAGESIZE;
+		while(eepromWriteInProgress())
+		{
+			// wait.
+		}
+	}
+
+	//-- writing complete
+
+	uint8_t test_passed = 1; address = 0;
+	for(int i = 0; i<(EEPROM_SIZE/EEPROM_PAGESIZE);i++)
+	{
+		eepromRead(eep_read_buffer,address,EEPROM_PAGESIZE);
+		for(int j=0;j<EEPROM_PAGESIZE;j++)
+		{
+			if(eep_read_buffer[j] != 0xAA)
+			{
+				test_passed = 0;
+				break;
+			}
+		}
+		address = address + EEPROM_PAGESIZE;
+	}
+
+	if(test_passed)
+	{
+		GLCD_SetCursorAddress(80);
+		GLCD_WriteText("EEPROM TEST PASS.");
+	}
+
+	GLCD_SetCursorAddress(120);
+	GLCD_WriteText("Finished");
+	_delay_ms(10000);
 
 }
 
@@ -612,18 +620,35 @@ void configureChecker(void)
 	uint8_t file_count = returnFileList(file_names,"CHK");
 
 	drawFileList(file_names,file_count,0);
+	GLCD_SetCursorAddress(80+10);
+	GLCD_WriteText("Choose CHK File...");
 
 	while(1)
 	{
 		if(readKeys() == CH_DOWN)
 		{
 			selected_file_index++;
-			if(selected_file_index>1)
+			if(selected_file_index>(file_count-1))
 			{
 				selected_file_index=0;
 			}
 			drawFileList(file_names,file_count,selected_file_index);
-			GLCD_SetCursorAddress(80+15);
+			GLCD_SetCursorAddress(80+10);
+			GLCD_WriteText("Choose CHK File...");
+		}
+
+		if(readKeys() == CH_UP)
+		{
+			if(selected_file_index == 0)
+			{
+				selected_file_index=file_count-1;
+			}
+			else
+			{
+				selected_file_index--;
+			}
+			drawFileList(file_names,file_count,selected_file_index);
+			GLCD_SetCursorAddress(80+10);
 			GLCD_WriteText("Choose CHK File...");
 		}
 
@@ -633,6 +658,11 @@ void configureChecker(void)
 			strncat(chk_file_path,file_names[selected_file_index],strlen(file_names[selected_file_index]));
 			break;
 		}
+
+		if(readKeys() == CH_KEYSWITCHOPEN)
+		{
+			return;
+		}
 	}
 
 	GLCD_ClearText();
@@ -640,18 +670,35 @@ void configureChecker(void)
 	file_count = returnFileList(file_names,"LOC");
 	drawFileList(file_names,file_count,0);
 	selected_file_index = 0;
+	GLCD_SetCursorAddress(80+10);
+	GLCD_WriteText("Choose LOC File...");
 
 	while(1)
 	{
 		if(readKeys() == CH_DOWN)
 		{
 			selected_file_index++;
-			if(selected_file_index>1)
+			if(selected_file_index>(file_count-1))
 			{
 				selected_file_index=0;
 			}
 			drawFileList(file_names,file_count,selected_file_index);
-			GLCD_SetCursorAddress(80+15);
+			GLCD_SetCursorAddress(80+10);
+			GLCD_WriteText("Choose LOC File...");
+		}
+
+		if(readKeys() == CH_UP)
+		{
+			if(selected_file_index == 0)
+			{
+				selected_file_index=file_count-1;
+			}
+			else
+			{
+				selected_file_index--;
+			}
+			drawFileList(file_names,file_count,selected_file_index);
+			GLCD_SetCursorAddress(80+10);
 			GLCD_WriteText("Choose LOC File...");
 		}
 
@@ -661,43 +708,12 @@ void configureChecker(void)
 			strncat(loc_file_path,file_names[selected_file_index],strlen(file_names[selected_file_index]));
 			break;
 		}
+
+		if(readKeys() == CH_KEYSWITCHOPEN)
+		{
+			return;
+		}
 	}
-
-	//	GLCD_SetCursorAddress(400);
-	//	GLCD_WriteText(chk_file_path);
-	//
-	//
-	//
-	//	while(1)
-	//	{
-	//		i++;
-	//	}
-
-
-
-
-	//	address = 0; GLCD_SetCursorAddress(address);
-	//	GLCD_WriteText("This option will erase all contents of the Checker.");
-	//
-	//	GLCD_WriteText("");
-	//	address += 40; GLCD_SetCursorAddress(address);
-	//	GLCD_WriteText("Press OK to continue and Cancel to return to menu.");
-
-	//	while(1)
-	//	{
-	//		up = (PINA & (1 << PA3));
-	//		down = (PINA & (1 << PA2));
-	//		if(up == 8)
-	//		{
-	//			_delay_ms(2000);
-	//			break;
-	//		}
-	//		if(down == 4)
-	//		{
-	//			_delay_ms(2000);
-	//			return;
-	//		}
-	//	}
 
 	GLCD_ClearText();
 	GLCD_SetCursorAddress(0);
@@ -762,7 +778,7 @@ void configureChecker(void)
 		GLCD_SetCursorAddress(400);
 		GLCD_WriteText("Checker configuration completed.");
 	}
-	while(readKeys() != CH_CANCEL);
+	waitTillCancelOrSwitchOpens();
 }
 void selfLearn(void)
 {
@@ -777,7 +793,7 @@ void selfLearn(void)
 	{
 		displayMessage("FAIL");
 	}
-	while(readKeys() != CH_CANCEL);
+	waitTillCancelOrSwitchOpens();
 }
 void selfDiagnostic(void)
 {
@@ -876,9 +892,10 @@ void about(void)
 
 	line_address+=(newline*4);
 	GLCD_SetCursorAddress(line_address + 5);
-	GLCD_WriteText("Press OK to return to menu.");
+	GLCD_WriteText("Press Cancel to return to menu.");
+	GLCD_SetCursorAddress(5000);
 
-	while(readKeys() != CH_CANCEL);
+	waitTillCancelOrSwitchOpens();
 }
 void eraseChecker(void)
 {
@@ -914,7 +931,7 @@ void LEDSequence(void)
 	GLCD_ClearText();
 	GLCD_SetCursorAddress(0);
 	GLCD_WriteText("Outputting LED Sequence...");
-	uint8_t driver = 0;
+	uint8_t driver = 1;
 	uint8_t wire;
 	while(1)
 	{
@@ -975,18 +992,18 @@ uint8_t returnFileList(char file_names[MAX_QTY][MAX_FNAME_LENGTH], char extensio
 
 void drawFileList(char file_names[MAX_QTY][MAX_FNAME_LENGTH], uint8_t file_count, uint8_t selected_item)
 {
-	int i = 3;
+	int i = 6;
 
 	GLCD_ClearText();GLCD_ClearGraphic();
 	GLCD_SetCursorAddress(40+5);
 	for(i=0;i<file_count;i++)
 	{
-		GLCD_SetCursorAddress(120+15 +i*40);
+		GLCD_SetCursorAddress(200+10 +i*40);
 		GLCD_WriteText(file_names[i]);
 	}
 
-	GLCD_SetCursorAddress((3+selected_item)*40+12);
-	GLCD_WriteText("*");
+	GLCD_SetCursorAddress((5+selected_item)*40+7);
+	GLCD_WriteText(">>");
 }
 void displayFileList(char *ext, uint8_t length, uint8_t selected_item)
 {
@@ -1029,7 +1046,7 @@ void displayFileList(char *ext, uint8_t length, uint8_t selected_item)
 		}while(fno.fname[0] != 0x00);
 	}
 
-	GLCD_SetCursorAddress((3+selected_item)*40 + 12);
-	GLCD_WriteText("*");
+	GLCD_SetCursorAddress((5+selected_item)*40 + 12);
+	GLCD_WriteText(">>");
 }
 
