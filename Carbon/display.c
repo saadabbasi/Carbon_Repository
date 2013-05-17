@@ -30,6 +30,11 @@ void displayFaults(WireInfo faulty_wire[], const char* fault_type, uint16_t no_o
 	char colour_width[COLOUR_WIDTH + GAUGE_WIDTH];
 	GLCD_ClearGraphic();
 
+	if(faulty_wire[0].locationB[0] == '-')
+	{
+		faulty_wire[0].locationB[1] = '-';
+		faulty_wire[0].locationB[2] = 0x00;
+	}
 	int lenA = strlen(faulty_wire[0].locationA);
 	int lenB = strlen(faulty_wire[0].locationB);
 	uint8_t totalLength = lenA + lenB;
@@ -97,14 +102,19 @@ void displayFaults(WireInfo faulty_wire[], const char* fault_type, uint16_t no_o
 		h_offset = k/2;
 	}
 
-	if(faulty_wire[0].colour[0] != '#')
-	{
-		strncpy(colour_width,faulty_wire[0].colour,COLOUR_WIDTH);
-		strncat(colour_width," ",1);
-		strncat(colour_width,faulty_wire[0].gauge,GAUGE_WIDTH);
+	strncpy(colour_width,faulty_wire[0].colour,COLOUR_WIDTH);
+	strncat(colour_width," ",1);
 
-		drawText(colour_width,strlen(colour_width),(SED1335_SCR_WIDTH+1)/2 - strlen(colour_width)*16/2,75,20);
+	if(faulty_wire[0].gauge[0] != '#') // if gauge is '#', then the faulty location is considered to be a missing clip.
+	{
+		strncat(colour_width,faulty_wire[0].gauge,GAUGE_WIDTH);
 	}
+	else
+	{
+		strncat(colour_width,"--",GAUGE_WIDTH);
+	}
+
+	drawText(colour_width,strlen(colour_width),(SED1335_SCR_WIDTH+1)/2 - strlen(colour_width)*16/2,75,20);
 }
 
 uint16_t textWidthOfString(char str[], char FONT_SIZE)
