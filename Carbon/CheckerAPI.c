@@ -64,7 +64,6 @@ CH_KEY	readKeys(void)
 		enter = (PINA & (1 << ENTER_KEY_PIN));
 		if(enter)
 		{
-			while((PINA & (1 << ENTER_KEY_PIN)) != 0);
 			return CH_ENTER;
 		}
 
@@ -81,11 +80,7 @@ CH_KEY	readKeys(void)
 		}
 	}
 
-	if(!show_menu_key)
-	{
-		return CH_KEYSWITCHCLOSED;
-	}
-	else
+	if(show_menu_key)
 	{
 		return CH_KEYSWITCHOPEN;
 	}
