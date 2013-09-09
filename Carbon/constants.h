@@ -21,9 +21,9 @@
 #define CONSTANTS_H_
 
 #define MAJOR_VERSION			1 // when a new program is written.
-#define	MINOR_VERSION			1 // incremented when a new function is added.
-#define REVISION				2 // incremented on a bug fix.
-#define VERSION_STR				"v1.1.2"
+#define	MINOR_VERSION			3 // incremented when a new function is added.
+#define REVISION				1 // incremented on a bug fix.
+#define VERSION_STR				"v1.3.1"
 
 #define TESTPOINTS				72
 #define	BYTE_WIDTH				8

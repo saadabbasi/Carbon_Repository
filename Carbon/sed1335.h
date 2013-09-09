@@ -1,6 +1,8 @@
 //-----------------------------------------------------------------------------
 //
 //-----------------------------------------------------------------------------
+#include <stdint.h>
+
 #define 	SED1335_SYSTEM_SET   	0x40
 #define 	SED1335_SLEEP_IN   		0x53
 #define 	SED1335_DISP_OFF   		0x58
@@ -73,10 +75,10 @@ extern void GLCD_WriteCommand(unsigned char);
 extern void GLCD_WriteData(unsigned char);
 unsigned char GLCD_ReadData(void);
 char GLCD_ReadByteFromROMMemory(char *);
-extern void drawSmallText(char text[], int length, int x, int y);
-extern void drawAChar(int x, int y, int width, int height, unsigned int offset, const unsigned char *fontBitmap);
-extern void drawLargeText(char text[], int length, int x, int y);
-extern void drawText(char text[], int length, int x, int y, char FONT_SIZE);
+extern void drawSmallText(const char text[], int length, int x, int y);
+extern void drawAChar(uint16_t x, int y, int width, int height, unsigned int offset, const unsigned char *fontBitmap);
+extern void drawLargeText(const char text[], int length, uint16_t x, int y);
+extern void drawText(const char text[], int length, uint16_t x, int y, char FONT_SIZE);
 void GLCD_ClearText(void);
 void GLCD_ClearGraphic(void);
 void GLCD_TextGoTo(unsigned char, unsigned char);

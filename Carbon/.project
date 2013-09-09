@@ -86,4 +86,11 @@
 		<nature>de.innot.avreclipse.core.avrnature</nature>
 		<nature>org.eclipse.cdt.codan.core.codanNature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>buildnumber.h</name>
+			<type>1</type>
+			<locationURI>PROJECT_LOC/Release/buildnumber.h</locationURI>
+		</link>
+	</linkedResources>
 </projectDescription>

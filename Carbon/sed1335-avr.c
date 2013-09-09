@@ -60,7 +60,7 @@ char GLCD_ReadByteFromROMMemory(char * ptr)
 	return pgm_read_byte(ptr);
 }
 
-void drawAChar(int x, int y, int width, int height, unsigned int offset, const unsigned char *fontBitmap)
+void drawAChar(uint16_t x, int y, int width, int height, unsigned int offset, const unsigned char *fontBitmap)
 {
 	int pos = offset;
 	unsigned char data;
@@ -77,7 +77,7 @@ void drawAChar(int x, int y, int width, int height, unsigned int offset, const u
 	}
 }
 
-void drawSmallText(char text[], int length, int x, int y)
+void drawSmallText(const char text[], int length, int x, int y)
 {
 	int index = 0;
 	int width = 16;
@@ -128,7 +128,7 @@ void drawSmallText(char text[], int length, int x, int y)
 }
 
 
-void drawLargeText(char text[], int length, int x, int y)
+void drawLargeText(const char text[], int length, uint16_t x, int y)
 {
 	uint8_t index = 0;
 	uint8_t width = 24;
@@ -159,7 +159,7 @@ void drawLargeText(char text[], int length, int x, int y)
 	}
 }
 
-void drawText(char text[], int length, int x, int y, char FONT_SIZE)
+void drawText(const char text[], int length, uint16_t x, int y, char FONT_SIZE)
 {
 	if(FONT_SIZE == 20)
 		drawSmallText(text,length,x,y);

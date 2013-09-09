@@ -583,7 +583,7 @@ CH_RESULT checkHarness(uint8_t board_count)
 		else if(result == CH_MISSING_WIRE)
 		{
 			char *fault_type;
-			if(faulty_wires[0].gauge[0] == '#')
+			if(faulty_wires[0].colour[0] == '#')
 			{
 				fault_type = "MISSING CLIP";
 			}
